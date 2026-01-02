@@ -221,8 +221,27 @@ function iniciarGPS() {
         watchId = navigator.geolocation.watchPosition(async (pos) => {
             const { latitude, longitude } = pos.coords;
             myPosition = { lat: latitude, lng: longitude };
-            if (!marker) marker = L.marker([latitude, longitude]).addTo(map); else marker.setLatLng([latitude, longitude]);
-            map.setView([latitude, longitude], 16); 
+            
+            // Actualizar marcador del conductor
+            if (!marker) marker = L.marker([latitude, longitude]).addTo(map); 
+            else marker.setLatLng([latitude, longitude]);
+            
+            // --- CAMBIO AQUÍ: CALCULO DE CENTRO DESPLAZADO (20% ARRIBA) ---
+            // 1. Convertimos la lat/lng del conductor a píxeles del mapa
+            const zoomLevel = 16;
+            const point = map.project([latitude, longitude], zoomLevel);
+            
+            // 2. Restamos píxeles a Y para que el centro del mapa esté "más al norte"
+            // Esto hace que el conductor se vea "más abajo" en la pantalla.
+            // Usamos el 25% de la altura de la ventana como desplazamiento.
+            const offsetY = window.innerHeight * 0.25; 
+            const targetPoint = point.subtract([0, offsetY]);
+            
+            // 3. Convertimos de nuevo a Lat/Lng y movemos el mapa suavemente
+            const targetLatLng = map.unproject(targetPoint, zoomLevel);
+            map.panTo(targetLatLng, { animate: true, duration: 1 });
+            // -------------------------------------------------------------
+
             let estado = (!isOnline)?'inactivo':(currentTrip && currentTrip.estado!=='buscando'?'ocupado':'disponible');
             await window.supabaseClient.from('conductores').update({ latitud: latitude, longitud: longitude, estado: estado }).eq('id', conductorId);
         }, null, { enableHighAccuracy: true });
@@ -291,15 +310,32 @@ async function avanzarViaje() {
 
 function trazarRuta(lat1, lng1, lat2, lng2) {
     if (routingControl) { try{ map.removeControl(routingControl); }catch(e){} }
+    
     routingControl = L.Routing.control({ 
         waypoints: [L.latLng(lat1, lng1), L.latLng(lat2, lng2)], 
         createMarker: function() { return null; }, 
         lineOptions: { styles: [{color: '#2979ff', opacity: 0.7, weight: 6}] }, 
-        addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false 
+        addWaypoints: false, 
+        draggableWaypoints: false, 
+        fitSelectedRoutes: false, // <--- IMPORTANTE: Lo ponemos en false para controlarlo manualmente
+        show: false 
     }).addTo(map);
+
     routingControl.on('routesfound', function(e) {
-        const summary = e.routes[0].summary;
+        const routes = e.routes;
+        const summary = routes[0].summary;
         document.getElementById('tripStats').textContent = `${(summary.totalDistance/1000).toFixed(1)} km • ${Math.round(summary.totalTime/60)} min`;
+
+        // --- CAMBIO AQUÍ: AJUSTE DE VISTA CON PADDING ---
+        // Ajustamos el mapa a la ruta, pero le decimos que deje 300px libres abajo
+        // para que el panel del viaje no tape la línea azul.
+        const bounds = L.latLngBounds([lat1, lng1], [lat2, lng2]);
+        map.fitBounds(bounds, { 
+            paddingBottomRight: [0, 300], // 300px de espacio abajo
+            paddingTopLeft: [0, 50],      // 50px de espacio arriba
+            animate: true 
+        });
+        // -----------------------------------------------
     });
 }
 

@@ -24,7 +24,7 @@
         /* MAPA */
         #map { flex: 1; width: 100%; z-index: 0; }
         
-        /* NUEVO: TARJETA DE RESUMEN DIARIO */
+        /* TARJETA DE RESUMEN DIARIO */
         #dailySummary {
             position: absolute;
             top: 70px; /* Debajo de la barra superior */
@@ -36,36 +36,39 @@
             z-index: 900;
             font-size: 0.85rem;
             color: #ddd;
-            pointer-events: none; /* Para poder hacer clic en el mapa a través de ella si es necesario */
+            pointer-events: none;
         }
         #dailySummary strong { color: white; font-size: 1rem; display: block; margin-bottom: 2px; }
 
         /* BOTÓN FLOTANTE (Ganancias Totales) */
         .btn-float { position: absolute; top: 70px; right: 10px; background: #222; color: white; padding: 10px 15px; border-radius: 25px; border: 1px solid #444; font-weight: bold; cursor: pointer; z-index: 900; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         
-        /* BARRA INFERIOR (BOTÓN CONECTAR) - CORREGIDO */
+        /* --- MODIFICACIÓN: BOTÓN DE ESTADO FLOTANTE --- */
         .bottom-bar { 
-            padding: 15px; 
-            background: #000; 
-            border-top: 1px solid #333; 
+            position: absolute; 
+            top: 125px; /* Justo debajo del botón Historial */
+            right: 10px; 
+            width: auto;
+            padding: 0; 
+            background: transparent; 
+            border: none; 
             z-index: 1001; 
-            /* Asegura que el contenido no se desborde */
-            box-sizing: border-box; 
-            width: 100%;
         }
         .btn-status { 
-            width: 100%; 
-            padding: 18px; /* Un poco menos de padding vertical */
-            font-size: 1.2rem; 
+            width: auto; 
+            padding: 10px 20px; 
+            font-size: 0.9rem; 
             font-weight: bold; 
-            border-radius: 12px; 
-            border: none; 
+            border-radius: 25px; /* Redondo estilo pastilla */
+            border: 1px solid #444; 
             cursor: pointer; 
             transition: 0.3s; 
             text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .offline { background: #333; color: #888; border: 1px solid #444; } 
-        .online { background: #00e676; color: black; box-shadow: 0 0 20px rgba(0, 230, 118, 0.4); }
+        .offline { background: #333; color: #aaa; } 
+        .online { background: #00e676; color: black; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4); border-color: #00e676; }
+        /* --------------------------------------------- */
 
         /* PANEL DE VIAJE ACTIVO */
         #activeTripPanel { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
@@ -187,7 +190,6 @@
     <script src="app.js"></script>
 
     <script>
-        // Esta función se puede llamar desde app.js o ejecutarse aquí si se tiene acceso a supabase
         async function calcularResumenDiario() {
             if(!window.supabaseClient || !conductorId) return;
             
@@ -213,8 +215,7 @@
             document.getElementById('todayEarnings').innerText = `Ganado: L. ${totalHoy}`;
         }
 
-        // Intentar actualizar cada vez que se abre historial o al cargar
-        setInterval(calcularResumenDiario, 15000); // Refrescar cada 15s
+        setInterval(calcularResumenDiario, 15000); 
     </script>
 </body>
 </html>

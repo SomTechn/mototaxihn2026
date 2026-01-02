@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/75/75807.png">
     <title>Ingresar - Conductor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -31,10 +30,10 @@
             text-align: center;
         }
         h1 { margin: 0 0 5px 0; color: #fff; letter-spacing: -1px; }
-        p { color: #888; margin-bottom: 30px; font-size: 0.95rem; }
+        p { color: #888; margin-bottom: 20px; font-size: 0.95rem; }
         
         input { 
-            width: 100%; padding: 16px; margin-bottom: 15px; 
+            width: 100%; padding: 14px; margin-bottom: 12px; 
             border: 1px solid #333; border-radius: 12px; 
             background: #222; font-size: 1rem; color: white; box-sizing: border-box;
         }
@@ -45,81 +44,161 @@
             background: #00e676; color: black; 
             border: none; border-radius: 12px; 
             font-weight: 800; font-size: 1.1rem; 
-            cursor: pointer;
+            cursor: pointer; margin-top: 10px;
         }
+        .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .toggle-link {
             margin-top: 20px; display: block;
             color: #00e676; text-decoration: none;
             font-weight: 600; font-size: 0.9rem; cursor: pointer;
         }
-        .error { color: #ef4444; font-size: 0.9rem; margin-top: 10px; min-height: 20px; }
         .logo { font-size: 3rem; margin-bottom: 10px; }
+        .hidden { display: none; }
+        hr { border: 0; border-top: 1px solid #333; margin: 15px 0; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="logo">🏍️</div>
-        <h1 id="title">Conductor App</h1>
-        <p id="subtitle">Gestiona tus viajes y ganancias</p>
+        
+        <div id="loginForm">
+            <h1>Conductor App</h1>
+            <p>Gestiona tus viajes y ganancias</p>
 
-        <input type="email" id="email" placeholder="Correo electrónico">
-        <input type="password" id="password" placeholder="Contraseña">
-        
-        <button class="btn-main" onclick="manejarAuth()" id="btnAction">INICIAR TURNO</button>
-        
-        <div class="error" id="msg"></div>
-        
-        <a class="toggle-link" onclick="toggleMode()" id="toggleText">¿Nuevo conductor? Regístrate aquí</a>
+            <input type="email" id="lEmail" placeholder="Correo electrónico">
+            <input type="password" id="lPass" placeholder="Contraseña">
+            
+            <button class="btn-main" onclick="iniciarSesion()" id="btnLogin">INICIAR TURNO</button>
+            <a class="toggle-link" onclick="toggleForms()">¿Nuevo conductor? Regístrate aquí</a>
+        </div>
+
+        <div id="registerForm" class="hidden">
+            <h1>Registro Flota</h1>
+            <p>Únete al equipo</p>
+
+            <input type="text" id="rName" placeholder="Nombre Completo">
+            <input type="tel" id="rPhone" placeholder="Teléfono Celular">
+            
+            <hr>
+            <input type="text" id="rMoto" placeholder="Modelo Moto (Ej: Bajaj Roja)">
+            <input type="text" id="rPlate" placeholder="Número de Placa">
+            <hr>
+
+            <input type="email" id="rEmail" placeholder="Correo electrónico">
+            <input type="password" id="rPass" placeholder="Contraseña">
+            
+            <button class="btn-main" onclick="registrarse()" id="btnRegister">REGISTRARME</button>
+            <a class="toggle-link" onclick="toggleForms()">¿Ya tienes cuenta? Ingresa</a>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
     <script src="config.js"></script>
     <script>
-        let isLogin = true;
-
+        // Verificar sesión al cargar
         window.onload = async () => {
             if(!window.supabaseClient) return;
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             if(session) window.location.href = 'index.html';
         };
 
-        function toggleMode() {
-            isLogin = !isLogin;
-            document.getElementById('title').innerText = isLogin ? "Conductor App" : "Registro Conductor";
-            document.getElementById('btnAction').innerText = isLogin ? "INICIAR TURNO" : "REGISTRARME";
-            document.getElementById('toggleText').innerText = isLogin ? "¿Nuevo conductor? Regístrate aquí" : "¿Ya tienes cuenta? Ingresa";
-            document.getElementById('msg').innerText = "";
+        function toggleForms() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('registerForm').classList.toggle('hidden');
         }
 
-        async function manejarAuth() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const msg = document.getElementById('msg');
-            const btn = document.getElementById('btnAction');
+        // === INICIAR SESIÓN ===
+        async function iniciarSesion() {
+            const email = document.getElementById('lEmail').value;
+            const password = document.getElementById('lPass').value;
+            const btn = document.getElementById('btnLogin');
 
-            if(!email || !password) return msg.innerText = "Faltan datos";
+            if(!email || !password) return alert("Faltan datos");
             
-            msg.innerText = "";
             btn.innerText = "Conectando...";
             btn.disabled = true;
 
             try {
-                if (isLogin) {
-                    const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    window.location.href = 'index.html';
-                } else {
-                    const { error } = await window.supabaseClient.auth.signUp({ email, password });
-                    if (error) throw error;
-                    alert("Registro exitoso. Bienvenido a la flota.");
-                    window.location.href = 'index.html';
+                // 1. Auth Login
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                // 2. Verificar Rol (Seguridad: Que no sea cliente)
+                const { data: perfil } = await window.supabaseClient
+                    .from('perfiles')
+                    .select('rol')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (perfil.rol !== 'conductor') {
+                    await window.supabaseClient.auth.signOut();
+                    throw new Error("Esta cuenta NO está autorizada como Conductor.");
                 }
+
+                window.location.href = 'index.html';
+
             } catch (e) {
-                msg.innerText = e.message;
+                alert(e.message);
                 btn.disabled = false;
-                btn.innerText = isLogin ? "INICIAR TURNO" : "REGISTRARME";
+                btn.innerText = "INICIAR TURNO";
+            }
+        }
+
+        // === REGISTRO BLINDADO (SOLO CONDUCTORES) ===
+        // === REGISTRO CONDUCTOR (CORREGIDO CON UPSERT) ===
+        async function registrarse() {
+            const nombre = document.getElementById('rName').value;
+            const telefono = document.getElementById('rPhone').value;
+            const moto = document.getElementById('rMoto').value;
+            const placa = document.getElementById('rPlate').value;
+            const email = document.getElementById('rEmail').value;
+            const password = document.getElementById('rPass').value;
+            const btn = document.getElementById('btnRegister');
+
+            if(!nombre || !telefono || !moto || !placa || !email || !password) {
+                return alert("Por favor completa TODOS los campos.");
+            }
+
+            btn.innerText = "Registrando...";
+            btn.disabled = true;
+
+            try {
+                // 1. Crear Usuario Auth
+                const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
+                if (error) throw error;
+
+                const uid = data.user.id;
+
+                // 2. Insertar o Actualizar en PERFILES (Upsert)
+                const { error: errPerfil } = await window.supabaseClient.from('perfiles').upsert({
+                    id: uid,
+                    nombre: nombre,
+                    telefono: telefono,
+                    email: email,
+                    rol: 'conductor'
+                });
+                if (errPerfil) throw errPerfil;
+
+                // 3. Insertar en CONDUCTORES
+                const { error: errCon } = await window.supabaseClient.from('conductores').insert({
+                    perfil_id: uid,
+                    modelo_moto: moto,
+                    placa: placa,
+                    estado: 'disponible',
+                    saldo_actual: 0
+                });
+                if (errCon) throw errCon;
+
+                alert("¡Registro exitoso! Bienvenido a la flota.");
+                window.location.href = 'index.html';
+
+            } catch (e) {
+                console.error(e);
+                alert("Error: " + e.message);
+                btn.innerText = "REGISTRARME";
+                btn.disabled = false;
             }
         }
     </script>

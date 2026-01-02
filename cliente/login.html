@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ingresar - Cliente</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -27,10 +29,10 @@
             text-align: center;
         }
         h1 { margin: 0 0 10px 0; color: #1e293b; letter-spacing: -1px; }
-        p { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; }
+        p { color: #64748b; margin-bottom: 20px; font-size: 0.95rem; }
         
         input { 
-            width: 100%; padding: 16px; margin-bottom: 15px; 
+            width: 100%; padding: 14px; margin-bottom: 12px; 
             border: 1px solid #e2e8f0; border-radius: 12px; 
             background: #f8fafc; font-size: 1rem; box-sizing: border-box;
             transition: 0.3s;
@@ -42,18 +44,17 @@
             background: #0f172a; color: white; 
             border: none; border-radius: 12px; 
             font-weight: 800; font-size: 1.1rem; 
-            cursor: pointer; transition: transform 0.2s;
+            cursor: pointer; transition: transform 0.2s; margin-top: 10px;
         }
         .btn-main:active { transform: scale(0.98); }
+        .btn-main:disabled { opacity: 0.7; cursor: not-allowed; }
         
         .toggle-link {
             margin-top: 20px; display: block;
             color: #2563eb; text-decoration: none;
             font-weight: 600; font-size: 0.9rem; cursor: pointer;
         }
-        .error { color: #ef4444; font-size: 0.9rem; margin-top: 10px; min-height: 20px; }
-        
-        /* Logo placeholder */
+        .hidden { display: none; }
         .logo { font-size: 3rem; margin-bottom: 10px; }
     </style>
 </head>
@@ -61,74 +62,126 @@
 
     <div class="container">
         <div class="logo">🛵</div>
-        <h1 id="title">Bienvenido</h1>
-        <p id="subtitle">Pide tu transporte seguro</p>
+        
+        <div id="loginForm">
+            <h1>Bienvenido</h1>
+            <p>Pide tu transporte seguro</p>
+            <input type="email" id="lEmail" placeholder="Correo electrónico">
+            <input type="password" id="lPass" placeholder="Contraseña">
+            <button class="btn-main" onclick="iniciarSesion()" id="btnLogin">INGRESAR</button>
+            <a class="toggle-link" onclick="toggleForms()">¿No tienes cuenta? Regístrate</a>
+        </div>
 
-        <input type="email" id="email" placeholder="Correo electrónico">
-        <input type="password" id="password" placeholder="Contraseña">
-        
-        <button class="btn-main" onclick="manejarAuth()" id="btnAction">INGRESAR</button>
-        
-        <div class="error" id="msg"></div>
-        
-        <a class="toggle-link" onclick="toggleMode()" id="toggleText">¿No tienes cuenta? Regístrate</a>
+        <div id="registerForm" class="hidden">
+            <h1>Crear Cuenta</h1>
+            <p>Únete y viaja cómodo</p>
+            
+            <input type="text" id="rName" placeholder="Nombre Completo">
+            <input type="tel" id="rPhone" placeholder="Teléfono Celular">
+            <input type="email" id="rEmail" placeholder="Correo electrónico">
+            <input type="password" id="rPass" placeholder="Contraseña">
+            
+            <button class="btn-main" onclick="registrarse()" id="btnRegister">REGISTRARME</button>
+            <a class="toggle-link" onclick="toggleForms()">¿Ya tienes cuenta? Ingresa</a>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
-    <script src="config.js"></script>
     <script>
-        let isLogin = true;
-
+        // Verificar sesión al cargar
         window.onload = async () => {
             if(!window.supabaseClient) return;
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             if(session) window.location.href = 'index.html';
         };
 
-        function toggleMode() {
-            isLogin = !isLogin;
-            document.getElementById('title').innerText = isLogin ? "Bienvenido" : "Crear Cuenta";
-            document.getElementById('subtitle').innerText = isLogin ? "Pide tu transporte seguro" : "Únete y viaja cómodo";
-            document.getElementById('btnAction').innerText = isLogin ? "INGRESAR" : "REGISTRARME";
-            document.getElementById('toggleText').innerText = isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Ingresa";
-            document.getElementById('msg').innerText = "";
+        function toggleForms() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('registerForm').classList.toggle('hidden');
         }
 
-        async function manejarAuth() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const msg = document.getElementById('msg');
-            const btn = document.getElementById('btnAction');
+        // === INICIAR SESIÓN ===
+        async function iniciarSesion() {
+            const email = document.getElementById('lEmail').value;
+            const password = document.getElementById('lPass').value;
+            const btn = document.getElementById('btnLogin');
 
-            if(!email || !password) return msg.innerText = "Completa todos los campos";
-            
-            msg.innerText = "";
-            btn.innerText = "Procesando...";
+            if(!email || !password) return alert("Ingresa correo y contraseña");
+
+            btn.innerText = "Verificando...";
             btn.disabled = true;
 
             try {
-                if (isLogin) {
-                    // LOGIN
-                    const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    window.location.href = 'index.html';
-                } else {
-                    // REGISTRO
-                    const { error } = await window.supabaseClient.auth.signUp({ email, password });
-                    if (error) throw error;
-                    
-                    // Crear perfil básico
-                    const { data: { session } } = await window.supabaseClient.auth.getSession();
-                    /* Nota: Supabase a veces auto-loguea tras registro, o pide confirmar email. 
-                       Asumimos auto-login o manejo simple. */
-                    alert("¡Registro exitoso! Ya puedes ingresar.");
-                    // Si la configuración de Supabase requiere confirmar email, avísalo aquí.
-                    window.location.href = 'index.html'; // Intentar entrar directo
+                // 1. Login
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                // 2. Verificar Rol (Seguridad: Que no sea conductor)
+                const { data: perfil } = await window.supabaseClient
+                    .from('perfiles')
+                    .select('rol')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (perfil.rol !== 'cliente') {
+                    await window.supabaseClient.auth.signOut();
+                    throw new Error("Esta cuenta NO es de pasajero.");
                 }
+
+                window.location.href = 'index.html';
+
             } catch (e) {
-                msg.innerText = e.message;
+                alert(e.message);
+                btn.innerText = "INGRESAR";
                 btn.disabled = false;
-                btn.innerText = isLogin ? "INGRESAR" : "REGISTRARME";
+            }
+        }
+
+        // === REGISTRO CORRECTO (TABLA CLIENTES) ===
+        // === REGISTRO CLIENTE (CORREGIDO CON UPSERT) ===
+        async function registrarse() {
+            const nombre = document.getElementById('rName').value;
+            const telefono = document.getElementById('rPhone').value;
+            const email = document.getElementById('rEmail').value;
+            const password = document.getElementById('rPass').value;
+            const btn = document.getElementById('btnRegister');
+
+            if(!nombre || !telefono || !email || !password) return alert("Por favor completa TODOS los datos.");
+
+            btn.innerText = "Creando cuenta...";
+            btn.disabled = true;
+
+            try {
+                // 1. Crear Usuario en Auth
+                const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
+                if (error) throw error;
+
+                const userId = data.user.id;
+
+                // 2. Insertar o Actualizar en PERFILES (Usamos upsert para evitar duplicados)
+                const { error: errPerfil } = await window.supabaseClient.from('perfiles').upsert({
+                    id: userId,
+                    nombre: nombre,
+                    telefono: telefono,
+                    email: email,
+                    rol: 'cliente'
+                });
+                if (errPerfil) throw errPerfil;
+
+                // 3. Insertar en CLIENTES
+                // (Aquí también usamos upsert por seguridad, aunque insert funcionaría si es nuevo)
+                const { error: errCli } = await window.supabaseClient.from('clientes').upsert({
+                    perfil_id: userId
+                });
+                if (errCli) throw errCli;
+
+                alert("¡Registro exitoso! Bienvenido.");
+                window.location.href = 'index.html';
+
+            } catch (e) {
+                console.error(e);
+                alert("Error: " + e.message);
+                btn.innerText = "REGISTRARME";
+                btn.disabled = false;
             }
         }
     </script>

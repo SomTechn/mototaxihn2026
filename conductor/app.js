@@ -28,7 +28,7 @@ window.addEventListener('load', async () => {
         initRealtime();
         checkViajePendiente();
         
-        // Inicializar Sliders
+        // Inicializar Sliders para aceptar/rechazar
         initSliders();
         
     } catch (e) { console.error(e); }
@@ -134,7 +134,6 @@ function rechazarOferta() {
     document.getElementById('modalTrip').style.display = 'none';
     currentTrip = null;
     if(previewMap) { previewMap.remove(); previewMap = null; }
-    // Opcional: Avisar al servidor que se rechazó (para métricas)
 }
 
 function initSliders() {
@@ -158,19 +157,17 @@ function setupSlider(id, isLeftToRight, onComplete) {
         if (!isDragging) return;
         const currentX = (e.touches ? e.touches[0].clientX : e.clientX);
         const diff = currentX - startX;
-        const containerWidth = container.offsetWidth - btn.offsetWidth - 8; // Margen
+        const containerWidth = container.offsetWidth - btn.offsetWidth - 8;
 
         if (isLeftToRight) {
-            // Deslizar Derecha (Aceptar)
             let newPos = Math.max(0, Math.min(diff, containerWidth));
-            btn.style.left = (newPos + 4) + 'px'; // +4 offset inicial
-            if (newPos > containerWidth * 0.9) { // 90% completado
+            btn.style.left = (newPos + 4) + 'px';
+            if (newPos > containerWidth * 0.9) {
                 isDragging = false;
                 onComplete();
             }
         } else {
-            // Deslizar Izquierda (Rechazar)
-            let newPos = Math.max(0, Math.min(-diff, containerWidth)); // Negativo porque vamos izq
+            let newPos = Math.max(0, Math.min(-diff, containerWidth));
             btn.style.right = (newPos + 4) + 'px'; 
             if (newPos > containerWidth * 0.9) {
                 isDragging = false;
@@ -189,10 +186,8 @@ function setupSlider(id, isLeftToRight, onComplete) {
 
     btn.addEventListener('mousedown', startDrag);
     btn.addEventListener('touchstart', startDrag);
-    
     document.addEventListener('mousemove', doDrag);
     document.addEventListener('touchmove', doDrag);
-    
     document.addEventListener('mouseup', stopDrag);
     document.addEventListener('touchend', stopDrag);
 }
@@ -204,7 +199,7 @@ function resetSlider(id, isLeftToRight) {
     else btn.style.right = '4px';
 }
 
-// === FUNCIONES GLOBALES ===
+// === FUNCIONES GLOBALES Y GPS ===
 
 async function toggleStatus() {
     const btn = document.getElementById('btnStatus');
@@ -222,31 +217,40 @@ function iniciarGPS() {
             const { latitude, longitude } = pos.coords;
             myPosition = { lat: latitude, lng: longitude };
             
-            // Actualizar marcador del conductor
+            // 1. Actualizar el marcador de la moto
             if (!marker) marker = L.marker([latitude, longitude]).addTo(map); 
             else marker.setLatLng([latitude, longitude]);
             
-            // --- CAMBIO AQUÍ: CALCULO DE CENTRO DESPLAZADO (20% ARRIBA) ---
-            // 1. Convertimos la lat/lng del conductor a píxeles del mapa
-            const zoomLevel = 16;
-            const point = map.project([latitude, longitude], zoomLevel);
-            
-            // 2. Restamos píxeles a Y para que el centro del mapa esté "más al norte"
-            // Esto hace que el conductor se vea "más abajo" en la pantalla.
-            // Usamos el 25% de la altura de la ventana como desplazamiento.
-            const offsetY = window.innerHeight * 0.15; 
-            const targetPoint = point.subtract([0, offsetY]);
-            
-            // 3. Convertimos de nuevo a Lat/Lng y movemos el mapa suavemente
-            const targetLatLng = map.unproject(targetPoint, zoomLevel);
-            map.panTo(targetLatLng, { animate: true, duration: 1 });
-            // -------------------------------------------------------------
+            // 2. Determinar modo de vista (Navegación vs Espera)
+            const enModoNavegacion = currentTrip && (currentTrip.estado === 'aceptada' || currentTrip.estado === 'en_curso');
 
-            let estado = (!isOnline)?'inactivo':(currentTrip && currentTrip.estado!=='buscando'?'ocupado':'disponible');
-            await window.supabaseClient.from('conductores').update({ latitud: latitude, longitud: longitude, estado: estado }).eq('id', conductorId);
+            if (enModoNavegacion) {
+                // === MODO VIAJE: MOTO ABAJO (OFFSET) ===
+                const zoomLevel = 17;
+                const point = map.project([latitude, longitude], zoomLevel);
+                // Subir el centro del mapa un 20% para que la moto quede abajo
+                const offsetY = window.innerHeight * 0.20; 
+                const targetPoint = point.subtract([0, offsetY]);
+                const targetLatLng = map.unproject(targetPoint, zoomLevel);
+                
+                map.panTo(targetLatLng, { animate: true, duration: 1 });
+            } else {
+                // === MODO ESPERA: MOTO AL CENTRO ===
+                map.setView([latitude, longitude], 16);
+            }
+
+            // 3. Actualizar base de datos
+            let estado = (!isOnline) ? 'inactivo' : (enModoNavegacion ? 'ocupado' : 'disponible');
+            await window.supabaseClient.from('conductores').update({ 
+                latitud: latitude, 
+                longitud: longitude, 
+                estado: estado 
+            }).eq('id', conductorId);
+
         }, null, { enableHighAccuracy: true });
     }
 }
+
 function detenerGPS() { if (watchId) navigator.geolocation.clearWatch(watchId); }
 
 async function aceptarViaje() {
@@ -255,8 +259,13 @@ async function aceptarViaje() {
 
     if (!currentTrip || !currentTrip.id) return;
 
-    // CANDADO DE SEGURIDAD
-    const { data, error } = await window.supabaseClient.from('carreras').update({ estado: 'aceptada', conductor_id: conductorId }).eq('id', currentTrip.id).eq('estado', 'buscando').select();
+    // CANDADO DE SEGURIDAD: Solo aceptar si el estado es 'buscando'
+    const { data, error } = await window.supabaseClient
+        .from('carreras')
+        .update({ estado: 'aceptada', conductor_id: conductorId })
+        .eq('id', currentTrip.id)
+        .eq('estado', 'buscando')
+        .select();
 
     if (error) { console.error(error); return alert("Error de conexión."); }
 
@@ -310,32 +319,20 @@ async function avanzarViaje() {
 
 function trazarRuta(lat1, lng1, lat2, lng2) {
     if (routingControl) { try{ map.removeControl(routingControl); }catch(e){} }
-    
     routingControl = L.Routing.control({ 
         waypoints: [L.latLng(lat1, lng1), L.latLng(lat2, lng2)], 
         createMarker: function() { return null; }, 
         lineOptions: { styles: [{color: '#2979ff', opacity: 0.7, weight: 6}] }, 
-        addWaypoints: false, 
-        draggableWaypoints: false, 
-        fitSelectedRoutes: false, // <--- IMPORTANTE: Lo ponemos en false para controlarlo manualmente
-        show: false 
+        addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false 
     }).addTo(map);
-
+    
     routingControl.on('routesfound', function(e) {
-        const routes = e.routes;
-        const summary = routes[0].summary;
+        const summary = e.routes[0].summary;
         document.getElementById('tripStats').textContent = `${(summary.totalDistance/1000).toFixed(1)} km • ${Math.round(summary.totalTime/60)} min`;
-
-        // --- CAMBIO AQUÍ: AJUSTE DE VISTA CON PADDING ---
-        // Ajustamos el mapa a la ruta, pero le decimos que deje 300px libres abajo
-        // para que el panel del viaje no tape la línea azul.
+        
+        // Ajustar zoom a la ruta pero dejando espacio abajo para el panel
         const bounds = L.latLngBounds([lat1, lng1], [lat2, lng2]);
-        map.fitBounds(bounds, { 
-            paddingBottomRight: [0, 200], // 300px de espacio abajo
-            paddingTopLeft: [0, 10],      // 50px de espacio arriba
-            animate: true 
-        });
-        // -----------------------------------------------
+        map.fitBounds(bounds, { paddingBottomRight: [0, 300], paddingTopLeft: [0, 50], animate: true });
     });
 }
 
@@ -421,6 +418,4 @@ function cerrarChat() { document.getElementById('chatModal').style.display = 'no
 async function abrirHistorial() { document.getElementById('historyPanel').style.display = 'flex'; document.getElementById('historyList').innerHTML = "Cargando..."; const { data } = await window.supabaseClient.from('carreras').select('*').eq('conductor_id', conductorId).eq('estado', 'completada').order('fecha_solicitud', { ascending: false }).limit(50); const list = document.getElementById('historyList'); list.innerHTML = ""; if(!data || !data.length) { document.getElementById('totalEarnings').textContent="L. 0"; return list.innerHTML = "<p>Sin viajes.</p>"; } let total = 0; data.forEach(v => { total += parseFloat(v.precio); list.innerHTML += `<div class="history-card"><div class="history-header"><span style="color:#888; font-size:0.9rem">${new Date(v.fecha_solicitud).toLocaleDateString()}</span><span class="history-price">L. ${v.precio}</span></div></div>`; }); document.getElementById('totalEarnings').textContent = `L. ${total.toFixed(2)}`; }
 async function abrirPerfil() { document.getElementById('profilePanel').style.display='flex'; const {data:{session}} = await window.supabaseClient.auth.getSession(); const {data:p} = await window.supabaseClient.from('perfiles').select('*').eq('id', session.user.id).single(); const {data:c} = await window.supabaseClient.from('conductores').select('*').eq('id', conductorId).single(); document.getElementById('pName').value=p.nombre; document.getElementById('pPhone').value=p.telefono; document.getElementById('pMoto').value=c.modelo_moto; document.getElementById('pPlate').value=c.placa; document.getElementById('pEmail').value=p.email; }
 async function guardarPerfil() { const n=document.getElementById('pName').value; const ph=document.getElementById('pPhone').value; const m=document.getElementById('pMoto').value; const pl=document.getElementById('pPlate').value; const {data:{session}} = await window.supabaseClient.auth.getSession(); await window.supabaseClient.from('perfiles').update({nombre:n, telefono:ph}).eq('id', session.user.id); await window.supabaseClient.from('conductores').update({modelo_moto:m, placa:pl}).eq('id', conductorId); alert("✅ Guardado"); document.getElementById('profilePanel').style.display='none'; }
-
 async function cerrarSesion() { if(confirm("¿Salir?")) { await window.supabaseClient.auth.signOut(); window.location.href='login.html'; } }
-

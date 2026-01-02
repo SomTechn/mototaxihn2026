@@ -26,49 +26,18 @@
         
         /* TARJETA DE RESUMEN DIARIO */
         #dailySummary {
-            position: absolute;
-            top: 70px; /* Debajo de la barra superior */
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid #333;
-            z-index: 900;
-            font-size: 0.85rem;
-            color: #ddd;
-            pointer-events: none;
+            position: absolute; top: 70px; left: 10px; background: rgba(0, 0, 0, 0.8);
+            padding: 10px; border-radius: 10px; border: 1px solid #333; z-index: 900;
+            font-size: 0.85rem; color: #ddd; pointer-events: none;
         }
         #dailySummary strong { color: white; font-size: 1rem; display: block; margin-bottom: 2px; }
 
-        /* BOTÓN FLOTANTE (Ganancias Totales) */
+        /* BOTONES FLOTANTES */
         .btn-float { position: absolute; top: 70px; right: 10px; background: #222; color: white; padding: 10px 15px; border-radius: 25px; border: 1px solid #444; font-weight: bold; cursor: pointer; z-index: 900; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        
-        /* --- MODIFICACIÓN: BOTÓN DE ESTADO FLOTANTE --- */
-        .bottom-bar { 
-            position: absolute; 
-            top: 125px; /* Justo debajo del botón Historial */
-            right: 10px; 
-            width: auto;
-            padding: 0; 
-            background: transparent; 
-            border: none; 
-            z-index: 1001; 
-        }
-        .btn-status { 
-            width: auto; 
-            padding: 10px 20px; 
-            font-size: 0.9rem; 
-            font-weight: bold; 
-            border-radius: 25px; /* Redondo estilo pastilla */
-            border: 1px solid #444; 
-            cursor: pointer; 
-            transition: 0.3s; 
-            text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
+        .bottom-bar { position: absolute; top: 125px; right: 10px; width: auto; padding: 0; background: transparent; border: none; z-index: 1001; }
+        .btn-status { width: auto; padding: 10px 20px; font-size: 0.9rem; font-weight: bold; border-radius: 25px; border: 1px solid #444; cursor: pointer; transition: 0.3s; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .offline { background: #333; color: #aaa; } 
         .online { background: #00e676; color: black; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4); border-color: #00e676; }
-        /* --------------------------------------------- */
 
         /* PANEL DE VIAJE ACTIVO */
         #activeTripPanel { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
@@ -91,11 +60,41 @@
         .btn-save { width: 100%; padding: 15px; background: #00e676; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
         .btn-logout { width: 100%; padding: 15px; background: #b91c1c; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 30px; }
 
-        #modalTrip { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
-        .btn-accept { background: #2979ff; color: white; font-size: 1.5rem; padding: 15px 40px; border: none; border-radius: 50px; font-weight: bold; margin-top: 15px; cursor: pointer; animation: pop 0.5s infinite alternate; width: 100%; max-width: 300px; }
-        @keyframes pop { from { transform: scale(1); } to { transform: scale(1.05); } }
+        /* === NUEVOS ESTILOS PARA OFERTA DESLIZABLE === */
+        #modalTrip { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        #previewMap { width: 100%; max-width: 350px; height: 220px; border-radius: 15px; margin: 15px 0; border: 2px solid #333; }
         
-        #previewMap { width: 100%; max-width: 350px; height: 250px; border-radius: 15px; margin: 15px 0; border: 2px solid #333; }
+        /* Barra de Tiempo */
+        .timer-bar { width: 100%; max-width: 300px; height: 6px; background: #333; border-radius: 3px; margin: 10px 0; overflow: hidden; }
+        .timer-fill { height: 100%; width: 100%; background: #00e676; transition: width 1s linear; }
+
+        /* Contenedor de Sliders */
+        .slider-wrapper { width: 100%; max-width: 320px; margin-top: 15px; display: flex; flex-direction: column; gap: 15px; }
+
+        /* Estilo base del Slider */
+        .slider-container {
+            position: relative; width: 100%; height: 55px; border-radius: 30px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; user-select: none; touch-action: none;
+        }
+        
+        /* Slider Aceptar */
+        .slider-accept { background: #1b5e20; border: 1px solid #2e7d32; }
+        .slider-accept .slider-text { color: #a5d6a7; font-weight: bold; font-size: 0.9rem; z-index: 1; }
+        .slider-accept .slider-btn { background: #00e676; color: black; left: 4px; }
+
+        /* Slider Rechazar */
+        .slider-reject { background: #450a0a; border: 1px solid #7f1d1d; }
+        .slider-reject .slider-text { color: #fca5a5; font-weight: bold; font-size: 0.9rem; z-index: 1; }
+        .slider-reject .slider-btn { background: #ef4444; color: white; right: 4px; } /* Empieza a la derecha para deslizar izq */
+
+        /* Botón Arrastrable */
+        .slider-btn {
+            position: absolute; width: 48px; height: 48px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; cursor: grab; z-index: 2; top: 3px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
 
         .chat-modal { position: fixed; bottom: 0; left: 0; right: 0; top: 0; background: #000; z-index: 4000; display: none; flex-direction: column; }
         .chat-header { background: #1e1e1e; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #333; }
@@ -156,10 +155,25 @@
     <div id="modalTrip">
         <h2 style="color: #2979ff; margin-bottom:5px">¡NUEVO VIAJE!</h2>
         <h1 id="alertPrice" style="color: white; font-size:3rem; margin:0">L. --</h1>
+        
+        <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+        <div style="color:#888; margin-bottom: 10px; font-size: 0.9rem">Cierra en <span id="timerText">30</span>s</div>
+
         <div id="modalStats" style="color:#00e676; font-weight:bold; margin-bottom:5px; font-size:1.2rem">-- km • -- min</div>
         <div id="previewMap"></div>
         <p style="color: #aaa; font-size:0.9rem">Verde: Recogida | Azul: Destino</p>
-        <button class="btn-accept" onclick="aceptarViaje()">ACEPTAR VIAJE</button>
+        
+        <div class="slider-wrapper">
+            <div class="slider-container slider-accept" id="slideAccept">
+                <span class="slider-text">Desliza para ACEPTAR ➔</span>
+                <div class="slider-btn">🚲</div>
+            </div>
+
+            <div class="slider-container slider-reject" id="slideReject">
+                <span class="slider-text">✖ Desliza para RECHAZAR</span>
+                <div class="slider-btn">✖</div>
+            </div>
+        </div>
     </div>
 
     <div id="modalRecarga" class="modal-fs" style="z-index: 5000;">
@@ -192,29 +206,13 @@
     <script>
         async function calcularResumenDiario() {
             if(!window.supabaseClient || !conductorId) return;
-            
-            const hoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-            
-            const { data } = await window.supabaseClient
-                .from('carreras')
-                .select('precio')
-                .eq('conductor_id', conductorId)
-                .eq('estado', 'completada')
-                .gte('fecha_solicitud', hoy + 'T00:00:00')
-                .lte('fecha_solicitud', hoy + 'T23:59:59');
-            
-            let totalHoy = 0;
-            let viajesHoy = 0;
-            
-            if(data) {
-                viajesHoy = data.length;
-                data.forEach(c => totalHoy += parseFloat(c.precio));
-            }
-            
+            const hoy = new Date().toISOString().split('T')[0];
+            const { data } = await window.supabaseClient.from('carreras').select('precio').eq('conductor_id', conductorId).eq('estado', 'completada').gte('fecha_solicitud', hoy + 'T00:00:00').lte('fecha_solicitud', hoy + 'T23:59:59');
+            let totalHoy = 0; let viajesHoy = 0;
+            if(data) { viajesHoy = data.length; data.forEach(c => totalHoy += parseFloat(c.precio)); }
             document.getElementById('todayTrips').innerText = `Viajes: ${viajesHoy}`;
             document.getElementById('todayEarnings').innerText = `Ganado: L. ${totalHoy}`;
         }
-
         setInterval(calcularResumenDiario, 15000); 
     </script>
 </body>

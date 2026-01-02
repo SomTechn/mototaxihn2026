@@ -37,10 +37,10 @@
             border-radius: 25px 25px 0 0;
             box-shadow: 0 -5px 30px rgba(0,0,0,0.1); z-index: 1000;
             transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            max-height: 70vh; overflow-y: auto;
+            max-height: 80vh; overflow-y: auto; /* Aumenté un poco max-height */
         }
         
-        /* INPUTS DE DIRECCIÓN (ESTILO UBER) */
+        /* INPUTS DE DIRECCIÓN */
         .location-box {
             background: #f1f5f9; border-radius: 12px; padding: 15px;
             display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;
@@ -49,19 +49,36 @@
         .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .dot-green { background: #10b981; }
         .dot-red { background: #ef4444; }
-        .line-connect { 
-            position: absolute; left: 44px; top: 88px; width: 2px; height: 25px; 
-            background: #cbd5e1; z-index: 1005; /* Ajustar posición según padding */
-        }
         
         .address-input {
             width: 100%; border: none; background: transparent;
             font-size: 1rem; font-weight: 500; color: #334155; outline: none;
             text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
         }
-        .address-input::placeholder { color: #94a3b8; font-weight: 400; }
 
-        /* BOTONES PRINCIPALES */
+        /* --- NUEVOS ESTILOS PARA OFERTA Y NOTAS --- */
+        .offer-container {
+            background: #eff6ff; padding: 15px; border-radius: 12px;
+            border: 1px solid #dbeafe; margin-bottom: 15px;
+        }
+        .offer-label { font-size: 0.85rem; color: #64748b; margin-bottom: 5px; display: block; }
+        
+        .input-offer-wrapper { display: flex; align-items: center; gap: 5px; }
+        .currency-symbol { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
+        
+        .input-offer {
+            width: 100%; border: none; background: transparent;
+            font-size: 2rem; font-weight: 800; color: #2563eb; outline: none;
+        }
+        .input-offer:focus { border-bottom: 2px solid #2563eb; }
+
+        .input-note {
+            width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px;
+            font-size: 0.95rem; margin-top: 10px; box-sizing: border-box;
+            background: white;
+        }
+        /* ----------------------------------------- */
+
         .btn-main {
             width: 100%; padding: 18px; border-radius: 14px; border: none;
             background: #0f172a; color: white; font-size: 1.1rem; font-weight: 700;
@@ -71,60 +88,24 @@
         .btn-main:active { background: #1e293b; transform: scale(0.98); }
         .btn-main:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; box-shadow: none; }
 
-        /* TARIFA Y ZONA */
-        .quote-box {
-            display: flex; justify-content: space-between; align-items: center;
-            background: #eff6ff; padding: 15px; border-radius: 12px;
-            margin-bottom: 15px; border: 1px solid #dbeafe;
-        }
-        .price-tag { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
-        .zone-tag { font-size: 0.9rem; color: #64748b; font-weight: 500; }
-
-        /* ESTADO DEL VIAJE */
-        .driver-card {
-            background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px;
-            border-radius: 16px; margin-top: 15px;
-        }
-        .driver-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .driver-plate {
-            background: #e2e8f0; padding: 4px 8px; border-radius: 6px;
-            font-family: monospace; font-weight: 700; color: #475569;
-        }
-        
-        /* BOTONES ACCIÓN (CHAT/SOS) */
-        .action-grid { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
-        .btn-chat {
-            background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe;
-            padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer;
-            display: flex; justify-content: center; align-items: center; gap: 8px;
-        }
-        .btn-sos {
-            background: #fee2e2; color: #ef4444; border: 1px solid #fecaca;
-            padding: 12px 20px; border-radius: 12px; font-weight: 800; cursor: pointer;
-        }
-
-        /* UTILIDADES */
         .hidden { display: none !important; }
-        .pulse-text { animation: pulse 1.5s infinite; color: #64748b; font-weight: 500; text-align: center; margin: 15px 0; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        /* ÍCONOS MAPA PERSONALIZADOS */
-        .marker-pin {
-            width: 30px; height: 30px; border-radius: 50% 50% 50% 0;
-            background: #0f172a; position: absolute; transform: rotate(-45deg);
-            left: 50%; top: 50%; margin: -15px 0 0 -15px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-        }
-        .marker-pin::after {
-            content: ''; width: 14px; height: 14px; margin: 8px 0 0 8px;
-            background: #fff; position: absolute; border-radius: 50%;
-        }
-        .marker-dest { background: #ef4444; } /* Rojo para destino */
-        .marker-user { background: #10b981; } /* Verde para usuario */
         
-        .moto-icon { font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); transition: all 0.5s ease; }
+        /* ESTADO DEL VIAJE */
+        .driver-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 16px; margin-top: 15px; }
+        .driver-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .driver-plate { background: #e2e8f0; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-weight: 700; color: #475569; }
+        .action-grid { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+        .btn-chat { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-sos { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; padding: 12px 20px; border-radius: 12px; font-weight: 800; cursor: pointer; }
 
-        /* CHAT MODAL */
+        /* UTILIDADES MAPA */
+        .marker-pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; background: #0f172a; position: absolute; transform: rotate(-45deg); left: 50%; top: 50%; margin: -15px 0 0 -15px; box-shadow: 0 3px 10px rgba(0,0,0,0.3); }
+        .marker-pin::after { content: ''; width: 14px; height: 14px; margin: 8px 0 0 8px; background: #fff; position: absolute; border-radius: 50%; }
+        .marker-dest { background: #ef4444; } 
+        .marker-user { background: #10b981; } 
+        .moto-icon { font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+        /* MODALES */
         .chat-modal { position: fixed; inset: 0; background: #f8fafc; z-index: 5000; display: none; flex-direction: column; }
         .chat-header { padding: 15px 20px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
         .chat-body { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
@@ -132,8 +113,6 @@
         .bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; }
         .bubble-me { align-self: flex-end; background: #2563eb; color: white; border-bottom-right-radius: 4px; }
         .bubble-other { align-self: flex-start; background: white; border: 1px solid #e2e8f0; color: #1e293b; border-bottom-left-radius: 4px; }
-        
-        /* Modales Fullscreen (Perfil/Historial) */
         .fs-modal { position: fixed; inset: 0; background: white; z-index: 4000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
     </style>
 </head>
@@ -151,12 +130,11 @@
             
             <div class="location-box">
                 <div style="position: absolute; left: 44px; top: 120px; width: 2px; height: 35px; background: #cbd5e1; z-index:1"></div>
-                
                 <div class="input-row">
                     <div class="dot dot-green"></div>
                     <input value="Tu ubicación actual" readonly class="address-input" style="color:#10b981">
                 </div>
-                <div style="height:1px; background:#e2e8f0; margin-left:20px"></div>
+                <div style="height:1px; background:#e2e8f0; margin-left:20px; margin-top:10px; margin-bottom:10px"></div>
                 <div class="input-row">
                     <div class="dot dot-red"></div>
                     <input id="destInput" placeholder="Toca el mapa para elegir destino..." readonly class="address-input">
@@ -164,22 +142,28 @@
             </div>
 
             <div id="quotePanel" class="hidden">
-                <div class="quote-box">
-                    <span class="zone-tag" id="zoneName">Zona A</span>
-                    <span class="price-tag" id="precioEstimado">L. --</span>
+                <div class="offer-container">
+                    <label class="offer-label">Tu Oferta (Mínimo sugerido: <span id="zoneMinPrice">--</span>)</label>
+                    <div class="input-offer-wrapper">
+                        <span class="currency-symbol">L.</span>
+                        <input type="number" id="inputPrecio" class="input-offer" placeholder="0">
+                    </div>
+                    
+                    <input type="text" id="inputNotas" class="input-note" placeholder="Agregar nota (Ej: Portón negro, camisa roja)">
                 </div>
+
                 <button id="btnPedir" class="btn-main" onclick="pedirViaje()">CONFIRMAR MOTO</button>
             </div>
         </div>
 
         <div id="step2" class="hidden" style="text-align:center">
             <div style="font-size:3rem; margin-bottom:10px; animation:pulse 1s infinite">📡</div>
-            <h3 style="margin:0; color:#1e293b">Buscando conductor cercano...</h3>
-            <p style="color:#64748b; font-size:0.9rem">Espera un momento, estamos notificando a la flota.</p>
+            <h3 style="margin:0; color:#1e293b">Ofreciendo tu tarifa...</h3>
+            <p style="color:#64748b; font-size:0.9rem">Notificando a conductores cercanos.</p>
             <button class="btn-main" style="background:white; color:#ef4444; border:2px solid #fee2e2; margin-top:20px" onclick="cancelar()">Cancelar búsqueda</button>
         </div>
 
-<div id="step3" class="hidden status-box">
+        <div id="step3" class="hidden status-box">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px">
                 <div id="badgeStatus" style="background:#dcfce7; color:#166534; padding:5px 10px; border-radius:20px; font-size:0.8rem; font-weight:700">● EN CAMINO</div>
                 <span id="lblETA" style="color:#64748b; font-size:0.9rem">Calculando...</span>
@@ -209,40 +193,23 @@
             <div style="font-size:3rem; margin-bottom:10px">✨</div>
             <h2 style="margin:0; color:#0f172a">¡Viaje Finalizado!</h2>
             <p style="color:#64748b">¿Qué tal estuvo tu viaje?</p>
-            
             <div class="stars" style="font-size:2.5rem; color:#e2e8f0; margin:20px 0; cursor:pointer">
                 <span onclick="rate(1)">★</span><span onclick="rate(2)">★</span><span onclick="rate(3)">★</span><span onclick="rate(4)">★</span><span onclick="rate(5)">★</span>
             </div>
-            
             <button class="btn-main" onclick="enviarCalificacion()">ENVIAR CALIFICACIÓN</button>
         </div>
     </div>
 
     <div id="chatModal" class="chat-modal">
-        <div class="chat-header">
-            <span>💬 Chat con Conductor</span>
-            <button onclick="cerrarChat()" style="background:none; border:none; font-size:1.5rem">✕</button>
-        </div>
+        <div class="chat-header"><span>💬 Chat con Conductor</span><button onclick="cerrarChat()" style="background:none; border:none; font-size:1.5rem">✕</button></div>
         <div id="chatBody" class="chat-body"></div>
-        <div class="chat-footer">
-            <input id="chatInput" type="text" placeholder="Escribe un mensaje..." style="flex:1; border:none; outline:none">
-            <button onclick="enviarMensaje()" style="background:#2563eb; color:white; border:none; width:40px; height:40px; border-radius:50%">➤</button>
-        </div>
+        <div class="chat-footer"><input id="chatInput" type="text" placeholder="Escribe un mensaje..." style="flex:1; border:none; outline:none"><button onclick="enviarMensaje()" style="background:#2563eb; color:white; border:none; width:40px; height:40px; border-radius:50%">➤</button></div>
     </div>
-
     <div id="profilePanel" class="fs-modal">
         <div class="chat-header" style="padding:0 0 20px 0"><h2>Mi Perfil</h2><button onclick="document.getElementById('profilePanel').style.display='none'" style="border:none; background:none; font-size:1.5rem">✕</button></div>
-        <label>Nombre</label><input id="pName" style="background:#f8fafc">
-        <label>Teléfono</label><input id="pPhone" style="background:#f8fafc">
-        <label>Email</label><input id="pEmail" readonly style="background:#e2e8f0; color:#94a3b8">
-        <button class="btn-main" onclick="guardarPerfil()" style="margin-top:20px">GUARDAR CAMBIOS</button>
-        <button class="btn-logout" onclick="cerrarSesion()" style="margin-top:auto">CERRAR SESIÓN</button>
+        <label>Nombre</label><input id="pName" style="background:#f8fafc"><label>Teléfono</label><input id="pPhone" style="background:#f8fafc"><label>Email</label><input id="pEmail" readonly style="background:#e2e8f0; color:#94a3b8"><button class="btn-main" onclick="guardarPerfil()" style="margin-top:20px">GUARDAR CAMBIOS</button><button class="btn-logout" onclick="cerrarSesion()" style="margin-top:auto">CERRAR SESIÓN</button>
     </div>
-
-    <div id="historyPanel" class="fs-modal">
-        <div class="chat-header" style="padding:0 0 20px 0"><h2>Mis Viajes</h2><button onclick="document.getElementById('historyPanel').style.display='none'" style="border:none; background:none; font-size:1.5rem">✕</button></div>
-        <div id="historyList">Cargando...</div>
-    </div>
+    <div id="historyPanel" class="fs-modal"><div class="chat-header" style="padding:0 0 20px 0"><h2>Mis Viajes</h2><button onclick="document.getElementById('historyPanel').style.display='none'" style="border:none; background:none; font-size:1.5rem">✕</button></div><div id="historyList">Cargando...</div></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>

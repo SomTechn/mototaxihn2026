@@ -49,15 +49,24 @@ function initMap() {
         
         document.getElementById('quotePanel').classList.remove('hidden');
         const btn = document.getElementById('btnPedir');
+        const inputPrecio = document.getElementById('inputPrecio');
+        const lblMinPrice = document.getElementById('zoneMinPrice');
+
         if (zona) { 
             zonaActual = zona; 
             document.getElementById('destInput').value = `📍 ${zona.nombre}`; 
-            document.getElementById('zoneName').textContent = zona.nombre;
-            document.getElementById('precioEstimado').textContent = `L. ${zona.tarifa_base}`; 
+            
+            // --- NUEVA LÓGICA DE PRECIOS ---
+            lblMinPrice.textContent = `L. ${zona.tarifa_base}`;
+            inputPrecio.value = zona.tarifa_base; // Poner precio sugerido
+            inputPrecio.min = zona.tarifa_base;   // Bloquear para abajo (validación visual)
+            // -------------------------------
+
             btn.disabled=false; btn.textContent="CONFIRMAR MOTO"; 
         } else { 
             zonaActual = null; document.getElementById('destInput').value = "❌ Fuera de cobertura"; 
-            document.getElementById('precioEstimado').textContent = "--"; btn.disabled=true; btn.textContent="NO DISPONIBLE"; 
+            inputPrecio.value = ""; lblMinPrice.textContent = "--";
+            btn.disabled=true; btn.textContent="NO DISPONIBLE"; 
         }
     });
 }
@@ -83,14 +92,29 @@ function eliminarMarcadorMoto(id) { if (driverMarkers[id]) { driversLayer.remove
 // === LOGICA VIAJE Y ETA ===
 async function pedirViaje() {
     if (!zonaActual) return;
+    
+    // VALIDACIÓN DE PRECIO
+    const oferta = parseFloat(document.getElementById('inputPrecio').value);
+    const notas = document.getElementById('inputNotas').value;
+
+    if (!oferta || oferta < zonaActual.tarifa_base) {
+        return alert(`La tarifa mínima para esta zona es L. ${zonaActual.tarifa_base}`);
+    }
+
     const { data: { session } } = await window.supabaseClient.auth.getSession();
     const { data: cliente } = await window.supabaseClient.from('clientes').select('id').eq('perfil_id', session.user.id).single();
     
     document.getElementById('btnPedir').textContent = "Procesando..."; document.getElementById('btnPedir').disabled = true;
 
     const { data, error } = await window.supabaseClient.from('carreras').insert({ 
-        cliente_id: cliente.id, origen_lat: userCoords.lat, origen_lng: userCoords.lng, 
-        destino_lat: destCoords.lat, destino_lng: destCoords.lng, precio: zonaActual.tarifa_base, estado: 'buscando' 
+        cliente_id: cliente.id, 
+        origen_lat: userCoords.lat, 
+        origen_lng: userCoords.lng, 
+        destino_lat: destCoords.lat, 
+        destino_lng: destCoords.lng, 
+        precio: oferta, // Enviamos la oferta del usuario
+        notas: notas,   // Enviamos las notas
+        estado: 'buscando' 
     }).select().single();
 
     if (error) { alert("Error: " + error.message); document.getElementById('btnPedir').textContent = "REINTENTAR"; document.getElementById('btnPedir').disabled = false; }
@@ -103,45 +127,34 @@ function escucharViaje(id) {
             const viaje = payload.new;
             if (viaje.estado === 'aceptada' || viaje.estado === 'en_curso') {
                 mostrarPantalla('step3');
-                actualizarInfoViaje(viaje); // <--- ACTUALIZA EL TEXTO
+                actualizarInfoViaje(viaje);
                 if(viaje.conductor_id) mostrarDatosConductor(viaje.conductor_id);
             } 
             else if (viaje.estado === 'completada') mostrarPantalla('step4');
         }).subscribe();
 }
 
-// === NUEVA FUNCIÓN: CÁLCULO DE LLEGADA ===
 function actualizarInfoViaje(viaje) {
     const titulo = document.getElementById('lblMainTitle');
     const badge = document.getElementById('badgeStatus');
     const etaLabel = document.getElementById('lblETA');
 
     if (viaje.estado === 'aceptada') {
-        // Conductor viene hacia mi
         titulo.textContent = "Conductor en camino";
         badge.textContent = "● ESPERANDO";
-        badge.style.background = "#fef3c7"; badge.style.color = "#d97706"; // Amarillo
+        badge.style.background = "#fef3c7"; badge.style.color = "#d97706";
         etaLabel.textContent = "El conductor va a recogerte";
     } 
     else if (viaje.estado === 'en_curso') {
-        // Vamos hacia el destino
         titulo.textContent = "Rumbo a tu destino";
         badge.textContent = "● EN VIAJE";
-        badge.style.background = "#dcfce7"; badge.style.color = "#166534"; // Verde
-
-        // Calcular ETA (Tiempo estimado)
-        // Distancia en línea recta (en metros)
+        badge.style.background = "#dcfce7"; badge.style.color = "#166534";
         const distMetros = map.distance([viaje.origen_lat, viaje.origen_lng], [viaje.destino_lat, viaje.destino_lng]);
-        
-        // Asumiendo velocidad promedio de moto en ciudad: 30 km/h = 500 metros/minuto aprox.
-        const velocidadMotos = 400; // metros por minuto (un poco conservador por tráfico)
+        const velocidadMotos = 400; 
         const minutosRestantes = Math.ceil(distMetros / velocidadMotos);
-        
-        // Calcular hora de llegada
         const ahora = new Date();
         ahora.setMinutes(ahora.getMinutes() + minutosRestantes);
         const horaLlegada = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
         etaLabel.textContent = `Llegada: ${horaLlegada} (${minutosRestantes} min)`;
     }
 }
@@ -152,23 +165,18 @@ async function checkViajeActivo(userId) {
     const { data: viaje } = await window.supabaseClient.from('carreras').select('*').eq('cliente_id', cli.id).in('estado', ['buscando', 'aceptada', 'en_curso']).maybeSingle();
     if (viaje) {
         activeTripId = viaje.id;
-        
-        // Restaurar coordenadas si recarga pagina
         if(viaje.origen_lat && viaje.destino_lat) {
             userCoords = { lat: viaje.origen_lat, lng: viaje.origen_lng };
             destCoords = { lat: viaje.destino_lat, lng: viaje.destino_lng };
         }
-
         escucharViaje(viaje.id); 
         initChat(viaje.id);
         if(viaje.conductor_id) mostrarDatosConductor(viaje.conductor_id);
-        
         mostrarPantalla(viaje.estado === 'buscando' ? 'step2' : 'step3');
-        if(viaje.estado !== 'buscando') actualizarInfoViaje(viaje); // Calcular al cargar
+        if(viaje.estado !== 'buscando') actualizarInfoViaje(viaje);
     }
 }
 
-// === AUXILIARES ===
 async function mostrarDatosConductor(id) {
     const { data: c } = await window.supabaseClient.from('conductores').select('modelo_moto, placa, perfiles(nombre)').eq('id', id).single();
     if(c) {

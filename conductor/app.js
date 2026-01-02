@@ -234,7 +234,7 @@ function iniciarGPS() {
             // 2. Restamos píxeles a Y para que el centro del mapa esté "más al norte"
             // Esto hace que el conductor se vea "más abajo" en la pantalla.
             // Usamos el 25% de la altura de la ventana como desplazamiento.
-            const offsetY = window.innerHeight * 0.25; 
+            const offsetY = window.innerHeight * 0.15; 
             const targetPoint = point.subtract([0, offsetY]);
             
             // 3. Convertimos de nuevo a Lat/Lng y movemos el mapa suavemente
@@ -331,8 +331,8 @@ function trazarRuta(lat1, lng1, lat2, lng2) {
         // para que el panel del viaje no tape la línea azul.
         const bounds = L.latLngBounds([lat1, lng1], [lat2, lng2]);
         map.fitBounds(bounds, { 
-            paddingBottomRight: [0, 100], // 300px de espacio abajo
-            paddingTopLeft: [0, 50],      // 50px de espacio arriba
+            paddingBottomRight: [0, 200], // 300px de espacio abajo
+            paddingTopLeft: [0, 10],      // 50px de espacio arriba
             animate: true 
         });
         // -----------------------------------------------
@@ -423,3 +423,4 @@ async function abrirPerfil() { document.getElementById('profilePanel').style.dis
 async function guardarPerfil() { const n=document.getElementById('pName').value; const ph=document.getElementById('pPhone').value; const m=document.getElementById('pMoto').value; const pl=document.getElementById('pPlate').value; const {data:{session}} = await window.supabaseClient.auth.getSession(); await window.supabaseClient.from('perfiles').update({nombre:n, telefono:ph}).eq('id', session.user.id); await window.supabaseClient.from('conductores').update({modelo_moto:m, placa:pl}).eq('id', conductorId); alert("✅ Guardado"); document.getElementById('profilePanel').style.display='none'; }
 
 async function cerrarSesion() { if(confirm("¿Salir?")) { await window.supabaseClient.auth.signOut(); window.location.href='login.html'; } }
+

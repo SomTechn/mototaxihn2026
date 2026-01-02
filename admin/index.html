@@ -53,6 +53,20 @@
         .badge-pending { background: #fef9c3; color: #854d0e; }
         .badge-approved { background: #dcfce7; color: #166534; }
         .badge-rejected { background: #fee2e2; color: #991b1b; }
+
+        /* === NUEVO: ÍCONO DE CLIENTE ESPERANDO === */
+        .client-icon {
+            font-size: 30px; 
+            text-align: center;
+            line-height: 30px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+            animation: bounce 1.5s infinite; /* Rebote para llamar la atención */
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
     </style>
 </head>
 <body>
@@ -61,7 +75,9 @@
         <h2>⚡ Admin SaaS</h2>
         <button class="nav-btn active" onclick="ver('zonas')">🗺️ Zonas y Dashboard</button>
         <button class="nav-btn" onclick="ver('finanzas')">💰 Solicitudes de Saldo</button>
-        <button class="nav-btn" onclick="ver('caja')">📊 Historial de Caja</button> <button class="nav-btn" onclick="ver('conductores')">🏍️ Conductores</button>
+        <button class="nav-btn" onclick="ver('caja')">📊 Historial de Caja</button>
+        <button class="nav-btn" onclick="ver('conductores')">🏍️ Conductores</button>
+        <button class="nav-btn" onclick="ver('clientes')">👥 Clientes</button>
         
         <button class="nav-btn logout-btn" onclick="salir()">Cerrar Sesión</button>
     </div>
@@ -73,13 +89,13 @@
                     <div class="stat-label">CONDUCTORES ACTIVOS</div>
                     <div id="statDrivers" class="stat-number">0</div>
                 </div>
+                <div class="stat-card" style="border-color: #ef4444;">
+                    <div class="stat-label">SOLICITUDES EN ESPERA</div>
+                    <div id="statRequests" class="stat-number">0</div>
+                </div>
                 <div class="stat-card" style="border-color: #2563eb;">
                     <div class="stat-label">INGRESOS HOY</div>
                     <div id="statEarnings" class="stat-number">L. 0</div>
-                </div>
-                <div class="stat-card" style="border-color: #f59e0b;">
-                    <div class="stat-label">ZONAS ACTIVAS</div>
-                    <div id="statZones" class="stat-number">0</div>
                 </div>
             </div>
 
@@ -114,8 +130,7 @@
                             <th style="padding:10px">Estado</th>
                         </tr>
                     </thead>
-                    <tbody id="cajaList">
-                        </tbody>
+                    <tbody id="cajaList"></tbody>
                 </table>
             </div>
         </div>
@@ -125,6 +140,24 @@
             <p>Monitoreo y gestión de acceso.</p>
             <div id="conductoresList">Cargando...</div>
         </div>
+        <div id="sec-clientes" style="display:none">
+    <h1>Base de Clientes</h1>
+    <p>Historial y comportamiento de usuarios.</p>
+    <div class="card">
+        <table style="width:100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0;">
+                    <th style="padding:10px">Nombre</th>
+                    <th style="padding:10px">Teléfono</th>
+                    <th style="padding:10px">Registro</th>
+                    <th style="padding:10px; text-align:center">✅ Completados</th>
+                    <th style="padding:10px; text-align:center">🚫 Cancelados</th>
+                </tr>
+            </thead>
+            <tbody id="clientesList"></tbody>
+        </table>
+    </div>
+</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

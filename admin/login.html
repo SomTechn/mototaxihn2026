@@ -40,6 +40,7 @@
             transition: 0.2s;
         }
         button:hover { background: #2563eb; }
+        .disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -51,34 +52,72 @@
         <input id="email" type="email" placeholder="Correo Administrativo">
         <input id="password" type="password" placeholder="Contraseña">
         
-        <button onclick="login()">INGRESAR AL PANEL</button>
+        <button id="btnLogin" onclick="login()">INGRESAR AL PANEL</button>
         <p id="msg" style="margin-top:20px; font-size:0.9rem; color:#ef4444"></p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
     <script src="config.js"></script>
     <script>
-        // Verificar si ya estoy logueado
+        // Verificar si ya estoy logueado y soy admin
         window.onload = async () => {
-            if(!window.supabaseClient) return;
+            await esperarSupabase();
             const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if(session) window.location.href = 'index.html';
+            if(session) {
+                // Verificar doblemente si es admin antes de redirigir
+                const { data: perfil } = await window.supabaseClient.from('perfiles').select('rol').eq('id', session.user.id).single();
+                if(perfil && perfil.rol === 'admin') {
+                    window.location.href = 'index.html';
+                } else {
+                    await window.supabaseClient.auth.signOut(); // Si no es admin, fuera
+                }
+            }
         };
+
+        async function esperarSupabase() { return new Promise(r => { const i = setInterval(() => { if (window.supabaseClient) { clearInterval(i); r(); } }, 100); }); }
 
         async function login() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const msg = document.getElementById('msg');
-            msg.textContent = "Verificando...";
+            const btn = document.getElementById('btnLogin');
 
+            msg.textContent = "";
+            
             if(!email || !password) return msg.textContent = "Ingresa credenciales completas.";
 
-            const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+            // UI Loading
+            btn.textContent = "Verificando...";
+            btn.classList.add('disabled');
+            btn.disabled = true;
 
-            if(error) {
-                msg.textContent = "Error: " + error.message;
-            } else {
+            try {
+                // 1. Intentar Logueo
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+
+                if(error) throw error;
+
+                // 2. VERIFICACIÓN DE SEGURIDAD (ROL ADMIN)
+                const { data: perfil, error: perfilError } = await window.supabaseClient
+                    .from('perfiles')
+                    .select('rol')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (perfilError || !perfil || perfil.rol !== 'admin') {
+                    // Si no es admin, cerramos la sesión que acabamos de abrir
+                    await window.supabaseClient.auth.signOut();
+                    throw new Error("⛔ Acceso Denegado: No tienes permisos de Administrador.");
+                }
+
+                // 3. Éxito
                 window.location.href = 'index.html';
+
+            } catch (e) {
+                msg.textContent = e.message;
+                btn.textContent = "INGRESAR AL PANEL";
+                btn.classList.remove('disabled');
+                btn.disabled = false;
             }
         }
     </script>

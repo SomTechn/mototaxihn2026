@@ -1,0 +1,36 @@
+:root {
+    --sidebar-bg: #111827;
+    --main-bg: #f3f4f6;
+    --primary: #2563eb;
+    --text-dark: #1f2937;
+}
+
+body { margin: 0; font-family: 'Inter', sans-serif; display: flex; height: 100vh; background: var(--main-bg); }
+
+/* SIDEBAR */
+.sidebar { width: 250px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 1rem; }
+.sidebar h2 { margin-bottom: 2rem; font-size: 1.2rem; text-align: center; color: #60a5fa; }
+.nav-btn { background: none; border: none; color: #9ca3af; padding: 1rem; text-align: left; cursor: pointer; font-size: 1rem; border-radius: 8px; margin-bottom: 0.5rem; width: 100%; }
+.nav-btn:hover, .nav-btn.active { background: #374151; color: white; font-weight: 600; }
+.user-info { margin-top: auto; padding: 1rem; border-top: 1px solid #374151; color: #9ca3af; text-align: center; }
+
+/* MAIN */
+.main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+h1 { color: var(--text-dark); margin: 0; }
+
+/* MAPA ADMIN */
+#mapAdmin { height: 500px; width: 100%; border-radius: 12px; border: 2px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+/* FORMULARIOS */
+.form-row { display: flex; gap: 10px; margin-bottom: 1rem; }
+.input-field { padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 8px; flex: 1; font-size: 1rem; }
+.btn-primary { background: var(--primary); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.btn-primary:hover { background: #1d4ed8; }
+.hint { color: #6b7280; font-size: 0.9rem; margin-top: 0.5rem; }
+
+/* LISTAS */
+.list-container { margin-top: 1rem; background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.zone-item { padding: 1rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.zone-item:last-child { border-bottom: none; }
+.badge { background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin SaaS - Mototaxis</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* ESTILOS DE DISEÑO */
+        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: #f8fafc; }
+        
+        .sidebar { width: 260px; background: #0f172a; color: white; padding: 25px 20px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+        .sidebar h2 { margin-top: 0; margin-bottom: 30px; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        
+        .nav-btn { 
+            background: transparent; border: none; color: #94a3b8; 
+            padding: 15px; text-align: left; cursor: pointer; 
+            font-size: 1rem; width: 100%; border-radius: 8px; 
+            transition: all 0.2s; font-weight: 500;
+        }
+        .nav-btn:hover { background: #1e293b; color: white; }
+        .nav-btn.active { background: #2563eb; color: white; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        
+        .logout-btn { margin-top: auto; color: #ef4444; border: 1px solid #ef4444; }
+        .logout-btn:hover { background: #fee2e2; color: #b91c1c; }
+
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        #mapAdmin { height: 500px; border-radius: 12px; margin: 20px 0; border: 2px solid #cbd5e1; box-shadow: inner 0 2px 4px rgba(0,0,0,0.05); }
+        
+        h1 { color: #1e293b; margin-top: 0; }
+        p { color: #64748b; margin-bottom: 20px; }
+        input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; margin-right: 10px; font-size: 1rem; outline: none; transition: 0.2s; }
+        input:focus { border-color: #2563eb; }
+        
+        .btn { background: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+        .btn:hover { background: #1d4ed8; }
+        .btn-danger { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; }
+        .btn-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        
+        /* Dashboard Stats */
+        .stats-bar { display: flex; gap: 20px; margin-bottom: 30px; }
+        .stat-card { flex: 1; background: white; padding: 20px; border-radius: 12px; border-left: 5px solid #2563eb; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stat-number { font-size: 2rem; font-weight: 800; color: #1e293b; margin: 5px 0; }
+        .stat-label { color: #64748b; font-size: 0.9rem; font-weight: 600; }
+
+        /* Finanzas */
+        .finance-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 15px; }
+        .amount { font-size: 1.5rem; font-weight: 800; color: #059669; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .badge-pending { background: #fef9c3; color: #854d0e; }
+        .badge-approved { background: #dcfce7; color: #166534; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>⚡ Admin SaaS</h2>
+        <button class="nav-btn active" onclick="ver('zonas')">🗺️ Zonas y Dashboard</button>
+        <button class="nav-btn" onclick="ver('finanzas')">💰 Solicitudes de Saldo</button>
+        <button class="nav-btn" onclick="ver('caja')">📊 Historial de Caja</button> <button class="nav-btn" onclick="ver('conductores')">🏍️ Conductores</button>
+        
+        <button class="nav-btn logout-btn" onclick="salir()">Cerrar Sesión</button>
+    </div>
+
+    <div class="main">
+        <div id="sec-zonas">
+            <div class="stats-bar">
+                <div class="stat-card" style="border-color: #00e676;">
+                    <div class="stat-label">CONDUCTORES ACTIVOS</div>
+                    <div id="statDrivers" class="stat-number">0</div>
+                </div>
+                <div class="stat-card" style="border-color: #2563eb;">
+                    <div class="stat-label">INGRESOS HOY</div>
+                    <div id="statEarnings" class="stat-number">L. 0</div>
+                </div>
+                <div class="stat-card" style="border-color: #f59e0b;">
+                    <div class="stat-label">ZONAS ACTIVAS</div>
+                    <div id="statZones" class="stat-number">0</div>
+                </div>
+            </div>
+
+            <h1>Gestión de Zonas</h1>
+            <div class="card">
+                <input type="text" id="zoneName" placeholder="Nombre (Ej: Residencial El Barrial)" style="width: 250px;">
+                <input type="number" id="zonePrice" placeholder="Tarifa (L.)" value="20" style="width: 100px;">
+                <button class="btn" onclick="guardarZona()">💾 Guardar Zona</button>
+            </div>
+            <div id="mapAdmin"></div>
+            <h3>Zonas Activas</h3>
+            <div id="zonesList">Cargando...</div>
+        </div>
+
+        <div id="sec-finanzas" style="display:none">
+            <h1>Solicitudes de Recarga</h1>
+            <p>Revisa los comprobantes y aprueba o rechaza.</p>
+            <div id="finanzasList">Cargando...</div>
+        </div>
+
+        <div id="sec-caja" style="display:none">
+            <h1>Historial de Transacciones</h1>
+            <p>Registro de todos los movimientos aprobados y rechazados.</p>
+            <div class="card">
+                <table style="width:100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding:10px">Fecha</th>
+                            <th style="padding:10px">Conductor</th>
+                            <th style="padding:10px">Referencia</th>
+                            <th style="padding:10px">Monto</th>
+                            <th style="padding:10px">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cajaList">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="sec-conductores" style="display:none">
+            <h1>Flota de Conductores</h1>
+            <p>Monitoreo y gestión de acceso.</p>
+            <div id="conductoresList">Cargando...</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

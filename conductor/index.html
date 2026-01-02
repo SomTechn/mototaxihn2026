@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Conductor</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+
+    <style>
+        body { margin: 0; background: #111; color: white; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .top-bar { padding: 10px 15px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
+        .saldo { font-size: 1.1rem; font-weight: bold; color: #00e676; margin-right: 10px; }
+        .btn-small { background: #333; color: white; border: 1px solid #555; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        .btn-icon { background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0; margin-right: 10px; }
+        #map { flex: 1; width: 100%; z-index: 0; }
+        .bottom-bar { padding: 20px; background: #000; border-top: 1px solid #333; z-index: 1001; }
+        .btn-float { position: absolute; top: 80px; right: 10px; background: #222; color: white; padding: 10px 15px; border-radius: 25px; border: 1px solid #444; font-weight: bold; cursor: pointer; z-index: 900; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .btn-status { width: 100%; padding: 20px; font-size: 1.3rem; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s; }
+        .offline { background: #333; color: #888; } .online { background: #00e676; color: black; box-shadow: 0 0 20px rgba(0, 230, 118, 0.4); }
+
+        /* Panel Viaje */
+        #activeTripPanel { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
+        .trip-info-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+        .trip-details { background: #2a2a2a; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; }
+        .trip-row { display: flex; margin-bottom: 8px; } .trip-icon { width: 20px; margin-right: 10px; text-align: center; }
+        .btn-action { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .btn-primary { background: #2979ff; color: white; } .btn-finish { background: #00e676; color: black; }
+        .btn-nav { background: #333; color: white; border: 1px solid #555; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-right: 5px; }
+        .btn-contact { background: #444; color: white; border: 1px solid #666; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 5px; position: relative; }
+        
+        /* Notificación Roja Chat */
+        #badgeChat { position: absolute; top: -5px; right: -5px; background: red; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; display: none; animation: pop 0.3s ease; }
+
+        /* Modal Alerta */
+        #modalTrip { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        .btn-accept { background: #2979ff; color: white; font-size: 1.5rem; padding: 15px 40px; border: none; border-radius: 50px; font-weight: bold; margin-top: 15px; cursor: pointer; animation: pop 0.5s infinite alternate; width: 100%; max-width: 300px; }
+        #previewMap { width: 100%; max-width: 350px; height: 250px; border-radius: 15px; margin: 15px 0; border: 2px solid #333; }
+        
+        /* Modales Generales */
+        .modal-fs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 3000; padding: 20px; overflow-y: auto; display: none; flex-direction: column; }
+        .modal-header { display: flex; align-items: center; margin-bottom: 20px; } .back-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; margin-right: 10px; }
+        .history-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
+        .earnings-box { background: linear-gradient(135deg, #1e1e1e, #111); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; margin-bottom: 20px; }
+        input { width: 100%; padding: 14px; background: #222; border: 1px solid #444; border-radius: 10px; margin-bottom: 15px; color: white; box-sizing: border-box; font-size: 1rem; } label { color: #888; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+        .btn-save { width: 100%; padding: 15px; background: #00e676; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        .btn-logout { width: 100%; padding: 15px; background: #b91c1c; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 30px; }
+
+        /* Chat UI */
+        .chat-modal { position: fixed; bottom: 0; left: 0; right: 0; top: 0; background: #000; z-index: 4000; display: none; flex-direction: column; }
+        .chat-header { background: #1e1e1e; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #333; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #111; }
+        .chat-footer { padding: 10px; background: #1e1e1e; display: flex; gap: 10px; border-top: 1px solid #333; }
+        .bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
+        .bubble-me { align-self: flex-end; background: #2979ff; color: white; border-bottom-right-radius: 2px; }
+        .bubble-other { align-self: flex-start; background: #222; color: #ddd; border-bottom-left-radius: 2px; border: 1px solid #444; }
+
+        @keyframes pop { from { transform: scale(1); } to { transform: scale(1.1); } }
+        .leaflet-routing-container { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div style="display:flex; align-items:center"><button class="btn-icon" onclick="abrirPerfil()">👤</button><span class="saldo" id="balanceDisplay">L --</span></div>
+        <button class="btn-small" onclick="abrirModalRecarga()">+ Saldo</button>
+    </div>
+
+    <div id="map"></div>
+    <button class="btn-float" onclick="abrirHistorial()">💰 Ganancias</button>
+    <div id="connectionPanel" class="bottom-bar"><button id="btnStatus" class="btn-status offline" onclick="toggleStatus()">DESCONECTADO 🔴</button></div>
+
+    <div id="activeTripPanel">
+        <div class="trip-info-header">
+            <div>
+                <h3 id="tripStepTitle" style="margin:0; color:#fff">Recogiendo...</h3>
+                <div style="display:flex; align-items:center; gap:10px">
+                    <div id="tripPrice" style="font-size:1.4rem; font-weight:bold; color:#00e676">L. --</div>
+                    <span id="tripStats" style="color:#aaa; font-size:0.9rem; font-weight:normal">-- km • -- min</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:5px">
+                <button class="btn-contact" onclick="abrirChat()">
+                    💬 Chat <div id="badgeChat">!</div>
+                </button>
+                <button class="btn-nav" onclick="abrirWaze()">🗺️ Mapa</button>
+            </div>
+        </div>
+        <div class="trip-details">
+            <div style="color:#aaa; font-size:0.8rem; margin-bottom:5px">Cliente: <span id="lblClientName" style="color:white; font-weight:bold">--</span></div>
+            <div class="trip-row"><div class="trip-icon">🔵</div><div id="txtOrigen" style="color:#ddd">--</div></div>
+            <div class="trip-row" style="margin-bottom:0"><div class="trip-icon">🔴</div><div id="txtDestino" style="color:#ddd">--</div></div>
+        </div>
+        <button id="btnTripAction" class="btn-action btn-primary" onclick="avanzarViaje()">YA LLEGUÉ</button>
+        <button class="btn-action" style="background:transparent; color:#ef4444; border:1px solid #ef4444" onclick="cancelarViaje()">Cancelar</button>
+    </div>
+
+    <div id="modalTrip">
+        <h2 style="color: #2979ff; margin-bottom:5px">¡NUEVO VIAJE!</h2>
+        <h1 id="alertPrice" style="color: white; font-size:3rem; margin:0">L. --</h1>
+        <div id="modalStats" style="color:#00e676; font-weight:bold; margin-bottom:5px; font-size:1.2rem">-- km • -- min</div>
+        
+        <div id="previewMap"></div>
+        <p style="color: #aaa; font-size:0.9rem">Verde: Recogida | Azul: Destino</p>
+        <button class="btn-accept" onclick="aceptarViaje()">ACEPTAR VIAJE</button>
+    </div>
+
+    <div id="modalRecarga" class="modal-fs" style="z-index: 5000;">
+        <div class="modal-header"><button class="back-btn" onclick="cerrarModalRecarga()">⬅️</button><h2 style="margin:0; color:white">Reportar Pago</h2></div>
+        <div style="padding: 20px;">
+            <p style="color:#aaa; font-size:0.9rem; margin-bottom:20px">Sube tu comprobante bancario.</p>
+            <label>Monto (L.)</label><input type="number" id="recMonto" placeholder="Ej: 200">
+            <label>Referencia</label><input type="text" id="recRef" placeholder="Ej: BAC-1234">
+            <label>Foto</label><input type="file" id="recFoto" accept="image/*" style="padding: 10px;">
+            <button id="btnEnviarRecarga" class="btn-save" onclick="enviarRecarga()">ENVIAR COMPROBANTE</button>
+            <p id="recStatus" style="text-align:center; color:#00e676; margin-top:10px"></p>
+        </div>
+    </div>
+    
+    <div id="historyPanel" class="modal-fs"><div class="modal-header"><button class="back-btn" onclick="document.getElementById('historyPanel').style.display='none'">⬅️</button><h2 style="margin:0; color:white">Ganancias</h2></div><div class="earnings-box"><span style="color:#888; font-size:0.9rem">Total Acumulado</span><div id="totalEarnings" style="font-size: 2rem; color:#00e676">L. 0</div></div><div id="historyList"></div></div>
+    <div id="profilePanel" class="modal-fs"><div class="modal-header"><button class="back-btn" onclick="document.getElementById('profilePanel').style.display='none'">⬅️</button><h2 style="margin:0; color:white">Perfil</h2></div><label>Nombre</label><input id="pName"><label>Teléfono</label><input id="pPhone"><label>Moto</label><input id="pMoto"><label>Placa</label><input id="pPlate"><label>Email</label><input id="pEmail" readonly style="background:#333; color:#888"><button class="btn-save" onclick="guardarPerfil()">GUARDAR</button><button class="btn-logout" onclick="cerrarSesion()">SALIR</button></div>
+    
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header"><span>💬 Chat</span><button onclick="cerrarChat()" style="background:none; border:none; color:white; font-size:1.5rem">✕</button></div>
+        <div id="chatBody" class="chat-body"></div>
+        <div class="chat-footer"><input id="chatInput" type="text" placeholder="Escribe..." style="margin:0; border-radius:20px; border:none; background:#333; color:white"><button onclick="enviarMensaje()" style="background:#2979ff; color:white; border:none; border-radius:50%; width:45px; height:45px;">➤</button></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

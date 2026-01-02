@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ingresar - Cliente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #f1f5f9; 
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        h1 { margin: 0 0 10px 0; color: #1e293b; letter-spacing: -1px; }
+        p { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; }
+        
+        input { 
+            width: 100%; padding: 16px; margin-bottom: 15px; 
+            border: 1px solid #e2e8f0; border-radius: 12px; 
+            background: #f8fafc; font-size: 1rem; box-sizing: border-box;
+            transition: 0.3s;
+        }
+        input:focus { border-color: #2563eb; outline: none; background: white; }
+        
+        .btn-main { 
+            width: 100%; padding: 16px; 
+            background: #0f172a; color: white; 
+            border: none; border-radius: 12px; 
+            font-weight: 800; font-size: 1.1rem; 
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .btn-main:active { transform: scale(0.98); }
+        
+        .toggle-link {
+            margin-top: 20px; display: block;
+            color: #2563eb; text-decoration: none;
+            font-weight: 600; font-size: 0.9rem; cursor: pointer;
+        }
+        .error { color: #ef4444; font-size: 0.9rem; margin-top: 10px; min-height: 20px; }
+        
+        /* Logo placeholder */
+        .logo { font-size: 3rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="logo">🛵</div>
+        <h1 id="title">Bienvenido</h1>
+        <p id="subtitle">Pide tu transporte seguro</p>
+
+        <input type="email" id="email" placeholder="Correo electrónico">
+        <input type="password" id="password" placeholder="Contraseña">
+        
+        <button class="btn-main" onclick="manejarAuth()" id="btnAction">INGRESAR</button>
+        
+        <div class="error" id="msg"></div>
+        
+        <a class="toggle-link" onclick="toggleMode()" id="toggleText">¿No tienes cuenta? Regístrate</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="config.js"></script>
+    <script>
+        let isLogin = true;
+
+        window.onload = async () => {
+            if(!window.supabaseClient) return;
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            if(session) window.location.href = 'index.html';
+        };
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            document.getElementById('title').innerText = isLogin ? "Bienvenido" : "Crear Cuenta";
+            document.getElementById('subtitle').innerText = isLogin ? "Pide tu transporte seguro" : "Únete y viaja cómodo";
+            document.getElementById('btnAction').innerText = isLogin ? "INGRESAR" : "REGISTRARME";
+            document.getElementById('toggleText').innerText = isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Ingresa";
+            document.getElementById('msg').innerText = "";
+        }
+
+        async function manejarAuth() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+            const btn = document.getElementById('btnAction');
+
+            if(!email || !password) return msg.innerText = "Completa todos los campos";
+            
+            msg.innerText = "";
+            btn.innerText = "Procesando...";
+            btn.disabled = true;
+
+            try {
+                if (isLogin) {
+                    // LOGIN
+                    const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    window.location.href = 'index.html';
+                } else {
+                    // REGISTRO
+                    const { error } = await window.supabaseClient.auth.signUp({ email, password });
+                    if (error) throw error;
+                    
+                    // Crear perfil básico
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    /* Nota: Supabase a veces auto-loguea tras registro, o pide confirmar email. 
+                       Asumimos auto-login o manejo simple. */
+                    alert("¡Registro exitoso! Ya puedes ingresar.");
+                    // Si la configuración de Supabase requiere confirmar email, avísalo aquí.
+                    window.location.href = 'index.html'; // Intentar entrar directo
+                }
+            } catch (e) {
+                msg.innerText = e.message;
+                btn.disabled = false;
+                btn.innerText = isLogin ? "INGRESAR" : "REGISTRARME";
+            }
+        }
+    </script>
+</body>
+</html>

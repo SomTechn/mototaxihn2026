@@ -6,9 +6,8 @@ let routingControl;
 let myPosition = null; 
 let previewMap = null; 
 let miSaldo = 0; 
-let ofertaTimer = null; // Variable para el timer
 
-// === INICIO ===
+// === INICIO APP ===
 window.addEventListener('load', async () => {
     try {
         await esperarSupabase();
@@ -27,10 +26,6 @@ window.addEventListener('load', async () => {
         initMap(); 
         initRealtime();
         checkViajePendiente();
-        
-        // Inicializar Sliders para aceptar/rechazar
-        initSliders();
-        
     } catch (e) { console.error(e); }
 });
 
@@ -46,7 +41,10 @@ function initRealtime() {
     window.supabaseClient.channel('mi_saldo').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conductores', filter: `id=eq.${conductorId}` }, p => { 
         miSaldo = p.new.saldo_actual;
         document.getElementById('balanceDisplay').textContent = `L ${miSaldo.toFixed(2)}`;
-        if(isOnline && miSaldo < 20) { alert("⚠️ ALERTA: Saldo bajo."); toggleStatus(); }
+        if(isOnline && miSaldo < 20) {
+            alert("⚠️ ALERTA: Saldo bajo. Recarga para seguir recibiendo viajes.");
+            toggleStatus(); 
+        }
     }).subscribe();
     window.supabaseClient.channel('carreras_pendientes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'carreras', filter: 'estado=eq.buscando' }, p => { 
         if (isOnline && !currentTrip) { 
@@ -56,21 +54,13 @@ function initRealtime() {
     }).subscribe();
 }
 
-// === LÓGICA DE SLIDERS Y TIMER ===
-
+// === OFERTA CON MAPA Y ESTADÍSTICAS ===
 function mostrarOferta(viaje) {
     currentTrip = viaje;
     document.getElementById('alertPrice').textContent = `L. ${viaje.precio}`;
-    document.getElementById('modalStats').textContent = "Calculando...";
+    document.getElementById('modalStats').textContent = "Calculando ruta..."; // Reset
     document.getElementById('modalTrip').style.display = 'flex';
     
-    // Resetear Sliders
-    resetSlider('slideAccept', true); // True = izquierda a derecha
-    resetSlider('slideReject', false); // False = derecha a izquierda
-
-    // Iniciar Timer 30s
-    iniciarTimerOferta();
-
     if (!previewMap) { 
         previewMap = L.map('previewMap', { zoomControl: false, attributionControl: false }); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(previewMap); 
@@ -81,6 +71,7 @@ function mostrarOferta(viaje) {
         previewMap.eachLayer((l) => { if (!l._url) previewMap.removeLayer(l); });
         
         if (myPosition) {
+            // Ruta Verde (Yo -> Cliente)
             L.Routing.control({ 
                 waypoints: [L.latLng(myPosition.lat, myPosition.lng), L.latLng(viaje.origen_lat, viaje.origen_lng)], 
                 createMarker: function() { return null; }, 
@@ -88,6 +79,7 @@ function mostrarOferta(viaje) {
                 addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false 
             }).addTo(previewMap);
             
+            // Ruta Azul (Cliente -> Destino) + CÁLCULO
             const control = L.Routing.control({ 
                 waypoints: [L.latLng(viaje.origen_lat, viaje.origen_lng), L.latLng(viaje.destino_lat, viaje.destino_lng)], 
                 createMarker: function() { return null; }, 
@@ -95,10 +87,15 @@ function mostrarOferta(viaje) {
                 addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false 
             }).addTo(previewMap);
 
+            // Escuchar cuando la ruta se calcula para sacar Km y Min
             control.on('routesfound', function(e) {
-                const summary = e.routes[0].summary;
-                document.getElementById('modalStats').textContent = `${(summary.totalDistance/1000).toFixed(1)} km • ${Math.round(summary.totalTime/60)} min`;
+                const routes = e.routes;
+                const summary = routes[0].summary;
+                const km = (summary.totalDistance / 1000).toFixed(1);
+                const min = Math.round(summary.totalTime / 60);
+                document.getElementById('modalStats').textContent = `${km} km • ${min} min`;
             });
+
         } else { 
             L.marker([viaje.origen_lat, viaje.origen_lng]).addTo(previewMap); 
             previewMap.setView([viaje.origen_lat, viaje.origen_lng], 14); 
@@ -106,105 +103,11 @@ function mostrarOferta(viaje) {
     }, 200);
 }
 
-function iniciarTimerOferta() {
-    clearInterval(ofertaTimer);
-    let timeLeft = 30;
-    const bar = document.getElementById('timerFill');
-    const txt = document.getElementById('timerText');
-    
-    bar.style.width = "100%";
-    bar.style.backgroundColor = "#00e676";
-    txt.innerText = "30";
-
-    ofertaTimer = setInterval(() => {
-        timeLeft--;
-        txt.innerText = timeLeft;
-        bar.style.width = (timeLeft / 30 * 100) + "%";
-        
-        if (timeLeft <= 10) bar.style.backgroundColor = "#ef4444"; // Rojo si falta poco
-
-        if (timeLeft <= 0) {
-            rechazarOferta(); // Tiempo agotado
-        }
-    }, 1000);
-}
-
-function rechazarOferta() {
-    clearInterval(ofertaTimer);
-    document.getElementById('modalTrip').style.display = 'none';
-    currentTrip = null;
-    if(previewMap) { previewMap.remove(); previewMap = null; }
-}
-
-function initSliders() {
-    setupSlider('slideAccept', true, () => aceptarViaje());
-    setupSlider('slideReject', false, () => rechazarOferta());
-}
-
-function setupSlider(id, isLeftToRight, onComplete) {
-    const container = document.getElementById(id);
-    const btn = container.querySelector('.slider-btn');
-    let isDragging = false;
-    let startX;
-    
-    const startDrag = (e) => {
-        isDragging = true;
-        startX = (e.touches ? e.touches[0].clientX : e.clientX);
-        btn.style.transition = 'none';
-    };
-
-    const doDrag = (e) => {
-        if (!isDragging) return;
-        const currentX = (e.touches ? e.touches[0].clientX : e.clientX);
-        const diff = currentX - startX;
-        const containerWidth = container.offsetWidth - btn.offsetWidth - 8;
-
-        if (isLeftToRight) {
-            let newPos = Math.max(0, Math.min(diff, containerWidth));
-            btn.style.left = (newPos + 4) + 'px';
-            if (newPos > containerWidth * 0.9) {
-                isDragging = false;
-                onComplete();
-            }
-        } else {
-            let newPos = Math.max(0, Math.min(-diff, containerWidth));
-            btn.style.right = (newPos + 4) + 'px'; 
-            if (newPos > containerWidth * 0.9) {
-                isDragging = false;
-                onComplete();
-            }
-        }
-    };
-
-    const stopDrag = () => {
-        if (!isDragging) return;
-        isDragging = false;
-        btn.style.transition = 'all 0.3s';
-        if (isLeftToRight) btn.style.left = '4px';
-        else btn.style.right = '4px';
-    };
-
-    btn.addEventListener('mousedown', startDrag);
-    btn.addEventListener('touchstart', startDrag);
-    document.addEventListener('mousemove', doDrag);
-    document.addEventListener('touchmove', doDrag);
-    document.addEventListener('mouseup', stopDrag);
-    document.addEventListener('touchend', stopDrag);
-}
-
-function resetSlider(id, isLeftToRight) {
-    const btn = document.querySelector(`#${id} .slider-btn`);
-    btn.style.transition = 'none';
-    if(isLeftToRight) btn.style.left = '4px';
-    else btn.style.right = '4px';
-}
-
-// === FUNCIONES GLOBALES Y GPS ===
-
+// === ESTADO Y GPS ===
 async function toggleStatus() {
     const btn = document.getElementById('btnStatus');
     if (!isOnline) {
-        if (miSaldo < 20) return alert(`🚫 SALDO INSUFICIENTE`);
+        if (miSaldo < 20) return alert(`🚫 SALDO INSUFICIENTE\nMínimo L. 20 para trabajar.`);
         isOnline = true; btn.textContent = "EN LÍNEA 🟢"; btn.className = "btn-status online"; await window.supabaseClient.from('conductores').update({ estado: 'disponible' }).eq('id', conductorId); iniciarGPS(); 
     } else { 
         isOnline = false; btn.textContent = "DESCONECTADO 🔴"; btn.className = "btn-status offline"; detenerGPS(); await window.supabaseClient.from('conductores').update({ estado: 'inactivo' }).eq('id', conductorId); 
@@ -216,70 +119,64 @@ function iniciarGPS() {
         watchId = navigator.geolocation.watchPosition(async (pos) => {
             const { latitude, longitude } = pos.coords;
             myPosition = { lat: latitude, lng: longitude };
-            
-            // 1. Actualizar el marcador de la moto
-            if (!marker) marker = L.marker([latitude, longitude]).addTo(map); 
-            else marker.setLatLng([latitude, longitude]);
-            
-            // 2. Determinar modo de vista (Navegación vs Espera)
-            const enModoNavegacion = currentTrip && (currentTrip.estado === 'aceptada' || currentTrip.estado === 'en_curso');
-
-            if (enModoNavegacion) {
-                // === MODO VIAJE: MOTO ABAJO (OFFSET) ===
-                const zoomLevel = 12;
-                const point = map.project([latitude, longitude], zoomLevel);
-                // Subir el centro del mapa un 20% para que la moto quede abajo
-                const offsetY = window.innerHeight * 0.0001; 
-                const targetPoint = point.subtract([0, offsetY]);
-                const targetLatLng = map.unproject(targetPoint, zoomLevel);
-                
-                map.panTo(targetLatLng, { animate: true, duration: 1 });
-            } else {
-                // === MODO ESPERA: MOTO AL CENTRO ===
-                map.setView([latitude, longitude], 16);
-            }
-
-            // 3. Actualizar base de datos
-            let estado = (!isOnline) ? 'inactivo' : (enModoNavegacion ? 'ocupado' : 'disponible');
-            await window.supabaseClient.from('conductores').update({ 
-                latitud: latitude, 
-                longitud: longitude, 
-                estado: estado 
-            }).eq('id', conductorId);
-
+            if (!marker) marker = L.marker([latitude, longitude]).addTo(map); else marker.setLatLng([latitude, longitude]);
+            map.setView([latitude, longitude], 16); 
+            let estado = (!isOnline)?'inactivo':(currentTrip && currentTrip.estado!=='buscando'?'ocupado':'disponible');
+            await window.supabaseClient.from('conductores').update({ latitud: latitude, longitud: longitude, estado: estado }).eq('id', conductorId);
         }, null, { enableHighAccuracy: true });
     }
 }
-
 function detenerGPS() { if (watchId) navigator.geolocation.clearWatch(watchId); }
 
+// === VIAJE ===
 async function aceptarViaje() {
-    clearInterval(ofertaTimer); // Detener contador
+    // Ocultamos el modal visualmente primero
     document.getElementById('modalTrip').style.display = 'none';
 
     if (!currentTrip || !currentTrip.id) return;
 
-    // CANDADO DE SEGURIDAD: Solo aceptar si el estado es 'buscando'
+    // === EL CANDADO DE SEGURIDAD ===
+    // Intentamos actualizar, PERO solo si el estado sigue siendo 'buscando'
     const { data, error } = await window.supabaseClient
         .from('carreras')
-        .update({ estado: 'aceptada', conductor_id: conductorId })
+        .update({ 
+            estado: 'aceptada', 
+            conductor_id: conductorId 
+        })
         .eq('id', currentTrip.id)
-        .eq('estado', 'buscando')
-        .select();
+        .eq('estado', 'buscando') // <--- AQUÍ ESTÁ LA MAGIA
+        .select(); // Pedimos que nos devuelva el dato actualizado
 
-    if (error) { console.error(error); return alert("Error de conexión."); }
+    if (error) {
+        console.error("Error al aceptar:", error);
+        return alert("Error de conexión. Intenta de nuevo.");
+    }
 
+    // === VERIFICAR QUIÉN GANÓ ===
+    // Si data está vacío ([]), significa que la condición .eq('estado', 'buscando') no se cumplió
+    // (es decir, alguien más ya lo tomó).
     if (!data || data.length === 0) {
-        alert("⚠️ Otro conductor ganó este viaje.");
+        alert("⚠️ Lo sentimos, otro conductor ganó este viaje.");
+        
+        // Limpiamos todo para esperar el siguiente
         currentTrip = null;
         if(previewMap) { previewMap.remove(); previewMap = null; }
         return;
     }
 
-    // ÉXITO
+    // === SI LLEGAMOS AQUÍ, ES TUYO ===
+    // El viaje es oficialmente nuestro
     currentTrip = data[0]; 
-    await window.supabaseClient.from('conductores').update({ estado: 'ocupado' }).eq('id', conductorId); 
-    alert("✅ ¡Viaje asignado!");
+    
+    // Cambiamos tu estado a ocupado
+    await window.supabaseClient
+        .from('conductores')
+        .update({ estado: 'ocupado' })
+        .eq('id', conductorId);
+
+    alert("✅ ¡Viaje asignado! Ve por el cliente.");
+    
+    // Configuramos la interfaz de navegación
     configurarPanelViaje(); 
     initChat(currentTrip.id);
 }
@@ -289,7 +186,8 @@ async function avanzarViaje() {
     const btn = document.getElementById('btnTripAction'); const txt = btn.textContent; btn.textContent="Procesando..."; btn.disabled=true;
     try {
         if (currentTrip.estado === 'aceptada') {
-            await window.supabaseClient.from('carreras').update({ estado: 'en_curso' }).eq('id', currentTrip.id);
+            const { error } = await window.supabaseClient.from('carreras').update({ estado: 'en_curso' }).eq('id', currentTrip.id);
+            if(error) throw error;
             currentTrip.estado = 'en_curso'; 
             btn.textContent = "FINALIZAR"; btn.className = "btn-action btn-finish"; btn.disabled = false;
             configurarPanelViaje();
@@ -301,8 +199,7 @@ async function avanzarViaje() {
             if(error) throw error;
             alert("💰 ¡Viaje finalizado!"); 
             
-            if(routingControl) { try{ map.removeControl(routingControl); }catch(e){} routingControl = null; }
-            
+            if(routingControl) { try { map.removeControl(routingControl); } catch(e){} routingControl = null; }
             currentTrip = null; document.getElementById('activeTripPanel').style.display = 'none'; document.getElementById('connectionPanel').style.display = 'block';
             
             if (miSaldo - (cobro * 0.10) < 20) {
@@ -318,21 +215,22 @@ async function avanzarViaje() {
 }
 
 function trazarRuta(lat1, lng1, lat2, lng2) {
-    if (routingControl) { try{ map.removeControl(routingControl); }catch(e){} }
+    if (routingControl) { try { map.removeControl(routingControl); } catch(e){} }
+    
+    // Crear ruta y escuchar cálculo para panel
     routingControl = L.Routing.control({ 
         waypoints: [L.latLng(lat1, lng1), L.latLng(lat2, lng2)], 
         createMarker: function() { return null; }, 
         lineOptions: { styles: [{color: '#2979ff', opacity: 0.7, weight: 6}] }, 
-        addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false 
+        addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false 
     }).addTo(map);
-    
+
+    // Actualizar Stats en Panel Principal
     routingControl.on('routesfound', function(e) {
         const summary = e.routes[0].summary;
-        document.getElementById('tripStats').textContent = `${(summary.totalDistance/1000).toFixed(1)} km • ${Math.round(summary.totalTime/60)} min`;
-        
-        // Ajustar zoom a la ruta pero dejando espacio abajo para el panel
-        const bounds = L.latLngBounds([lat1, lng1], [lat2, lng2]);
-        map.fitBounds(bounds, { paddingBottomRight: [0, 300], paddingTopLeft: [0, 50], animate: true });
+        const km = (summary.totalDistance / 1000).toFixed(1);
+        const min = Math.round(summary.totalTime / 60);
+        document.getElementById('tripStats').textContent = `${km} km • ${min} min`;
     });
 }
 
@@ -341,7 +239,7 @@ function configurarPanelViaje() {
     document.getElementById('tripPrice').textContent = `L. ${currentTrip.precio}`;
     document.getElementById('txtOrigen').textContent = currentTrip.origen_direccion || "Origen";
     document.getElementById('txtDestino').textContent = currentTrip.destino_direccion || "Destino";
-    document.getElementById('tripStats').textContent = "Calculando...";
+    document.getElementById('tripStats').textContent = "Calculando..."; // Reset
     
     const t = document.getElementById('tripStepTitle'); const b = document.getElementById('btnTripAction'); b.disabled = false;
     
@@ -371,56 +269,54 @@ async function cancelarViaje() {
 
 async function checkViajePendiente() { 
     const { data } = await window.supabaseClient.from('carreras').select('*').eq('conductor_id', conductorId).in('estado', ['aceptada', 'en_curso']).maybeSingle(); 
-    if (data) { 
-        currentTrip = data; 
-        isOnline = true; 
-        configurarPanelViaje(); 
-        iniciarGPS(); 
-        initChat(currentTrip.id); 
-        document.getElementById('btnStatus').textContent = "EN VIAJE 🟢"; 
-        document.getElementById('btnStatus').className = "btn-status online"; 
-    } 
+    if (data) { currentTrip = data; isOnline = true; configurarPanelViaje(); iniciarGPS(); initChat(currentTrip.id); document.getElementById('btnStatus').textContent = "EN VIAJE 🟢"; document.getElementById('btnStatus').className = "btn-status online"; } 
 }
 
 let clientPhone = ""; function contactarCliente() { if(!clientPhone) return alert("Sin número"); window.open(`https://wa.me/504${clientPhone}`, '_blank'); }
 function sonarAlerta() { const c = new (window.AudioContext||window.webkitAudioContext)(); const o = c.createOscillator(); o.connect(c.destination); o.start(); setTimeout(()=>o.stop(),800); }
 
-// === RECARGA Y CHAT ===
+// === NUEVA RECARGA ===
 function abrirModalRecarga() { document.getElementById('modalRecarga').style.display='flex'; document.getElementById('recMonto').value=''; document.getElementById('recRef').value=''; document.getElementById('recFoto').value=''; document.getElementById('recStatus').innerText=''; document.getElementById('btnEnviarRecarga').disabled=false; document.getElementById('btnEnviarRecarga').innerText="ENVIAR COMPROBANTE"; }
 function cerrarModalRecarga() { document.getElementById('modalRecarga').style.display='none'; }
 async function enviarRecarga() {
     const m=document.getElementById('recMonto').value; const r=document.getElementById('recRef').value; const f=document.getElementById('recFoto').files[0]; const btn=document.getElementById('btnEnviarRecarga'); const st=document.getElementById('recStatus');
-    if(!m || !r || !f) return alert("Llena todo.");
+    if(!m || !r || !f) return alert("Llena todo y sube foto.");
     btn.disabled=true; btn.innerText="Subiendo...";
     try {
         const fname = `${conductorId}_${Date.now()}.${f.name.split('.').pop()}`;
-        const { error: upErr } = await window.supabaseClient.storage.from('comprobantes').upload(fname, f); if(upErr) throw upErr;
-        const { data: { publicUrl } } = window.supabaseClient.storage.from('comprobantes').getPublicUrl(fname);
+        const { error: upErr } = await window.supabaseClient.storage.from('billetera').upload(fname, f); if(upErr) throw upErr;
+        const { data: { publicUrl } } = window.supabaseClient.storage.from('billetera').getPublicUrl(fname);
         const { error: dbErr } = await window.supabaseClient.from('solicitudes_recarga').insert({ conductor_id: conductorId, monto: m, referencia: r, comprobante_url: publicUrl }); if(dbErr) throw dbErr;
         st.innerText="✅ Enviado."; setTimeout(()=>cerrarModalRecarga(),2000);
     } catch(e) { console.error(e); alert("Error: "+e.message); btn.disabled=false; btn.innerText="REINTENTAR"; }
 }
 
+// === CHAT CORREGIDO ===
 function initChat(carreraId) { 
-    const chatBody = document.getElementById('chatBody'); chatBody.innerHTML = '<div style="text-align:center; color:#888; margin-top:10px"><small>Chat con Cliente</small></div>'; 
+    const chatBody = document.getElementById('chatBody'); 
+    chatBody.innerHTML = '<div style="text-align:center; color:#888; margin-top:10px"><small>Chat con Cliente</small></div>'; 
     window.supabaseClient.from('mensajes').select('*').eq('carrera_id', carreraId).order('created_at', { ascending: true }).then(({ data }) => { if(data) data.forEach(m => pintarMensaje(m)); }); 
     if (chatSubscription) window.supabaseClient.removeChannel(chatSubscription); 
     chatSubscription = window.supabaseClient.channel('chat_' + carreraId).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `carrera_id=eq.${carreraId}` }, p => { 
         pintarMensaje(p.new); 
-        if (p.new.remitente_rol === 'cliente' && document.getElementById('chatModal').style.display === 'none') { document.getElementById('badgeChat').style.display = 'block'; sonarAlerta(); } 
+        // LÓGICA DE ALERTA CORREGIDA: Si es mensaje de cliente y chat cerrado -> mostrar badge
+        if (p.new.remitente_rol === 'cliente' && document.getElementById('chatModal').style.display === 'none') { 
+            document.getElementById('badgeChat').style.display = 'block'; 
+            sonarAlerta(); // Reusamos sonido
+        } 
     }).subscribe(); 
 }
-function pintarMensaje(msg) { const div = document.createElement('div'); div.className = `bubble ${msg.remitente_rol === 'conductor' ? 'bubble-me' : 'bubble-other'}`; div.textContent = msg.texto; document.getElementById('chatBody').appendChild(div); document.getElementById('chatBody').scrollTop = document.getElementById('chatBody').scrollHeight; }
+
+function pintarMensaje(msg) { 
+    const div = document.createElement('div'); div.className = `bubble ${msg.remitente_rol === 'conductor' ? 'bubble-me' : 'bubble-other'}`; div.textContent = msg.texto; 
+    document.getElementById('chatBody').appendChild(div); document.getElementById('chatBody').scrollTop = document.getElementById('chatBody').scrollHeight; 
+}
 async function enviarMensaje() { const i = document.getElementById('chatInput'); const t = i.value.trim(); if (!t || !currentTrip) return; i.value = ""; await window.supabaseClient.from('mensajes').insert({ carrera_id: currentTrip.id, remitente_rol: 'conductor', texto: t }); }
 function abrirChat() { document.getElementById('chatModal').style.display = 'flex'; document.getElementById('badgeChat').style.display = 'none'; document.getElementById('chatBody').scrollTop = document.getElementById('chatBody').scrollHeight; } 
 function cerrarChat() { document.getElementById('chatModal').style.display = 'none'; }
 
+// === AUXILIARES ===
 async function abrirHistorial() { document.getElementById('historyPanel').style.display = 'flex'; document.getElementById('historyList').innerHTML = "Cargando..."; const { data } = await window.supabaseClient.from('carreras').select('*').eq('conductor_id', conductorId).eq('estado', 'completada').order('fecha_solicitud', { ascending: false }).limit(50); const list = document.getElementById('historyList'); list.innerHTML = ""; if(!data || !data.length) { document.getElementById('totalEarnings').textContent="L. 0"; return list.innerHTML = "<p>Sin viajes.</p>"; } let total = 0; data.forEach(v => { total += parseFloat(v.precio); list.innerHTML += `<div class="history-card"><div class="history-header"><span style="color:#888; font-size:0.9rem">${new Date(v.fecha_solicitud).toLocaleDateString()}</span><span class="history-price">L. ${v.precio}</span></div></div>`; }); document.getElementById('totalEarnings').textContent = `L. ${total.toFixed(2)}`; }
 async function abrirPerfil() { document.getElementById('profilePanel').style.display='flex'; const {data:{session}} = await window.supabaseClient.auth.getSession(); const {data:p} = await window.supabaseClient.from('perfiles').select('*').eq('id', session.user.id).single(); const {data:c} = await window.supabaseClient.from('conductores').select('*').eq('id', conductorId).single(); document.getElementById('pName').value=p.nombre; document.getElementById('pPhone').value=p.telefono; document.getElementById('pMoto').value=c.modelo_moto; document.getElementById('pPlate').value=c.placa; document.getElementById('pEmail').value=p.email; }
 async function guardarPerfil() { const n=document.getElementById('pName').value; const ph=document.getElementById('pPhone').value; const m=document.getElementById('pMoto').value; const pl=document.getElementById('pPlate').value; const {data:{session}} = await window.supabaseClient.auth.getSession(); await window.supabaseClient.from('perfiles').update({nombre:n, telefono:ph}).eq('id', session.user.id); await window.supabaseClient.from('conductores').update({modelo_moto:m, placa:pl}).eq('id', conductorId); alert("✅ Guardado"); document.getElementById('profilePanel').style.display='none'; }
 async function cerrarSesion() { if(confirm("¿Salir?")) { await window.supabaseClient.auth.signOut(); window.location.href='login.html'; } }
-
-
-
-
-

@@ -229,7 +229,7 @@ function iniciarGPS() {
                 const zoomLevel = 14;
                 const point = map.project([latitude, longitude], zoomLevel);
                 // Subir el centro del mapa un 20% para que la moto quede abajo
-                const offsetY = window.innerHeight * -0.05; 
+                const offsetY = window.innerHeight * 0.0001; 
                 const targetPoint = point.subtract([0, offsetY]);
                 const targetLatLng = map.unproject(targetPoint, zoomLevel);
                 
@@ -332,7 +332,7 @@ function trazarRuta(lat1, lng1, lat2, lng2) {
         
         // Ajustar zoom a la ruta pero dejando espacio abajo para el panel
         const bounds = L.latLngBounds([lat1, lng1], [lat2, lng2]);
-        map.fitBounds(bounds, { paddingBottomRight: [0, 50], paddingTopLeft: [0, 50], animate: true });
+        map.fitBounds(bounds, { paddingBottomRight: [0, 100], paddingTopLeft: [0, 50], animate: true });
     });
 }
 
@@ -419,6 +419,7 @@ async function abrirHistorial() { document.getElementById('historyPanel').style.
 async function abrirPerfil() { document.getElementById('profilePanel').style.display='flex'; const {data:{session}} = await window.supabaseClient.auth.getSession(); const {data:p} = await window.supabaseClient.from('perfiles').select('*').eq('id', session.user.id).single(); const {data:c} = await window.supabaseClient.from('conductores').select('*').eq('id', conductorId).single(); document.getElementById('pName').value=p.nombre; document.getElementById('pPhone').value=p.telefono; document.getElementById('pMoto').value=c.modelo_moto; document.getElementById('pPlate').value=c.placa; document.getElementById('pEmail').value=p.email; }
 async function guardarPerfil() { const n=document.getElementById('pName').value; const ph=document.getElementById('pPhone').value; const m=document.getElementById('pMoto').value; const pl=document.getElementById('pPlate').value; const {data:{session}} = await window.supabaseClient.auth.getSession(); await window.supabaseClient.from('perfiles').update({nombre:n, telefono:ph}).eq('id', session.user.id); await window.supabaseClient.from('conductores').update({modelo_moto:m, placa:pl}).eq('id', conductorId); alert("✅ Guardado"); document.getElementById('profilePanel').style.display='none'; }
 async function cerrarSesion() { if(confirm("¿Salir?")) { await window.supabaseClient.auth.signOut(); window.location.href='login.html'; } }
+
 
 
 

@@ -202,6 +202,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
     <script src="config.js"></script>
     <script src="app.js"></script>
+    <script src="slider-fix.js"></script>
 
     <script>
         async function calcularResumenDiario() {
@@ -214,6 +215,155 @@
             document.getElementById('todayEarnings').innerText = `Ganado: L. ${totalHoy}`;
         }
         setInterval(calcularResumenDiario, 15000); 
+
+        // ============================================
+// SLIDERS DE ACEPTAR/RECHAZAR - CÓDIGO A AGREGAR
+// ============================================
+
+function initSliders() {
+    const sliderAccept = document.getElementById('slideAccept');
+    const sliderReject = document.getElementById('slideReject');
+    
+    if (!sliderAccept || !sliderReject) {
+        console.warn('Sliders no encontrados en el DOM');
+        return;
+    }
+    
+    const btnAccept = sliderAccept.querySelector('.slider-btn');
+    const btnReject = sliderReject.querySelector('.slider-btn');
+    
+    let isDraggingAccept = false;
+    let isDraggingReject = false;
+    let startX = 0;
+    let currentX = 0;
+    
+    // SLIDER ACEPTAR (izquierda a derecha)
+    function handleStartAccept(e) {
+        isDraggingAccept = true;
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        btnAccept.style.cursor = 'grabbing';
+        e.preventDefault();
+    }
+    
+    function handleMoveAccept(e) {
+        if (!isDraggingAccept) return;
+        
+        currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        const deltaX = currentX - startX;
+        const maxDistance = sliderAccept.offsetWidth - btnAccept.offsetWidth - 8;
+        const newPos = Math.min(Math.max(0, deltaX), maxDistance);
+        
+        btnAccept.style.left = (4 + newPos) + 'px';
+        
+        // Si llega al final (>80% del recorrido)
+        if (newPos > maxDistance * 0.8) {
+            isDraggingAccept = false;
+            btnAccept.style.cursor = 'grab';
+            btnAccept.style.left = '4px'; // Reset
+            aceptarDesdeSlider();
+        }
+        
+        e.preventDefault();
+    }
+    
+    function handleEndAccept() {
+        if (!isDraggingAccept) return;
+        isDraggingAccept = false;
+        btnAccept.style.cursor = 'grab';
+        // Regresar al inicio si no completó el desliz
+        btnAccept.style.left = '4px';
+    }
+    
+    // SLIDER RECHAZAR (derecha a izquierda)
+    function handleStartReject(e) {
+        isDraggingReject = true;
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        btnReject.style.cursor = 'grabbing';
+        e.preventDefault();
+    }
+    
+    function handleMoveReject(e) {
+        if (!isDraggingReject) return;
+        
+        currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        const deltaX = startX - currentX; // Invertido: derecha a izquierda
+        const maxDistance = sliderReject.offsetWidth - btnReject.offsetWidth - 8;
+        const newPos = Math.min(Math.max(0, deltaX), maxDistance);
+        
+        btnReject.style.right = (4 + newPos) + 'px';
+        
+        // Si llega al final (>80% del recorrido)
+        if (newPos > maxDistance * 0.8) {
+            isDraggingReject = false;
+            btnReject.style.cursor = 'grab';
+            btnReject.style.right = '4px'; // Reset
+            rechazarDesdeSlider();
+        }
+        
+        e.preventDefault();
+    }
+    
+    function handleEndReject() {
+        if (!isDraggingReject) return;
+        isDraggingReject = false;
+        btnReject.style.cursor = 'grab';
+        // Regresar al inicio si no completó el desliz
+        btnReject.style.right = '4px';
+    }
+    
+    // Event listeners para ACEPTAR
+    btnAccept.addEventListener('mousedown', handleStartAccept);
+    btnAccept.addEventListener('touchstart', handleStartAccept, { passive: false });
+    
+    document.addEventListener('mousemove', handleMoveAccept);
+    document.addEventListener('touchmove', handleMoveAccept, { passive: false });
+    
+    document.addEventListener('mouseup', handleEndAccept);
+    document.addEventListener('touchend', handleEndAccept);
+    
+    // Event listeners para RECHAZAR
+    btnReject.addEventListener('mousedown', handleStartReject);
+    btnReject.addEventListener('touchstart', handleStartReject, { passive: false });
+    
+    document.addEventListener('mousemove', handleMoveReject);
+    document.addEventListener('touchmove', handleMoveReject, { passive: false });
+    
+    document.addEventListener('mouseup', handleEndReject);
+    document.addEventListener('touchend', handleEndReject);
+    
+    console.log('✅ Sliders inicializados correctamente');
+}
+
+function aceptarDesdeSlider() {
+    console.log('🚀 Slider ACEPTAR completado');
+    // Esta función debe llamar a la función aceptarViaje() de app.js
+    if (typeof aceptarViaje === 'function') {
+        aceptarViaje();
+    } else {
+        console.error('❌ Función aceptarViaje no encontrada en app.js');
+    }
+}
+
+function rechazarDesdeSlider() {
+    console.log('❌ Slider RECHAZAR completado');
+    // Esta función debe llamar a la función rechazarViaje() de app.js
+    if (typeof rechazarViaje === 'function') {
+        rechazarViaje();
+    } else {
+        console.error('❌ Función rechazarViaje no encontrada en app.js');
+    }
+}
+
+// Inicializar sliders cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSliders);
+} else {
+    // DOM ya está listo, inicializar inmediatamente
+    initSliders();
+}
+
+console.log('📱 Código de sliders cargado');
+
     </script>
 </body>
 </html>

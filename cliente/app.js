@@ -56,11 +56,10 @@ function initMap() {
             zonaActual = zona; 
             document.getElementById('destInput').value = `📍 ${zona.nombre}`; 
             
-            // --- NUEVA LÓGICA DE PRECIOS ---
+            // --- LOGICA DE PRECIOS ---
             lblMinPrice.textContent = `L. ${zona.tarifa_base}`;
-            inputPrecio.value = zona.tarifa_base; // Poner precio sugerido
-            inputPrecio.min = zona.tarifa_base;   // Bloquear para abajo (validación visual)
-            // -------------------------------
+            inputPrecio.value = zona.tarifa_base; 
+            inputPrecio.min = zona.tarifa_base;   
 
             btn.disabled=false; btn.textContent="CONFIRMAR MOTO"; 
         } else { 
@@ -112,8 +111,8 @@ async function pedirViaje() {
         origen_lng: userCoords.lng, 
         destino_lat: destCoords.lat, 
         destino_lng: destCoords.lng, 
-        precio: oferta, // Enviamos la oferta del usuario
-        notas: notas,   // Enviamos las notas
+        precio: oferta, 
+        notas: notas,
         estado: 'buscando' 
     }).select().single();
 
@@ -121,16 +120,27 @@ async function pedirViaje() {
     else { activeTripId = data.id; mostrarPantalla('step2'); escucharViaje(activeTripId); initChat(activeTripId); }
 }
 
+// === CORRECCIÓN AQUÍ: ESCUCHAR TODOS LOS ESTADOS (INCLUIDO CANCELADO) ===
 function escucharViaje(id) {
     window.supabaseClient.channel('viaje_' + id)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'carreras', filter: `id=eq.${id}` }, payload => {
             const viaje = payload.new;
+            
+            // Caso 1: Aceptado o En curso
             if (viaje.estado === 'aceptada' || viaje.estado === 'en_curso') {
                 mostrarPantalla('step3');
                 actualizarInfoViaje(viaje);
                 if(viaje.conductor_id) mostrarDatosConductor(viaje.conductor_id);
             } 
-            else if (viaje.estado === 'completada') mostrarPantalla('step4');
+            // Caso 2: Completado
+            else if (viaje.estado === 'completada') {
+                mostrarPantalla('step4');
+            }
+            // Caso 3: Cancelado (POR EL CONDUCTOR)
+            else if (viaje.estado === 'cancelada') {
+                alert("⚠️ El viaje ha sido cancelado.");
+                location.reload(); // Recargamos para limpiar el mapa y estado
+            }
         }).subscribe();
 }
 
@@ -209,4 +219,4 @@ function abrirChat() { document.getElementById('chatModal').style.display = 'fle
 async function abrirHistorial() { document.getElementById('historyPanel').style.display = 'flex'; document.getElementById('historyList').innerHTML = "Cargando..."; const { data: { session } } = await window.supabaseClient.auth.getSession(); const { data: cli } = await window.supabaseClient.from('clientes').select('id').eq('perfil_id', session.user.id).single(); const { data } = await window.supabaseClient.from('carreras').select('*, conductores(perfiles(nombre))').eq('cliente_id', cli.id).neq('estado', 'buscando').order('fecha_solicitud', { ascending: false }).limit(20); const list = document.getElementById('historyList'); list.innerHTML = ""; if (!data || !data.length) return list.innerHTML = "<p>Sin viajes.</p>"; data.forEach(v => { const badge = v.estado==='completada'?'badge-done':'badge-cancel'; list.innerHTML += `<div class="history-card"><div style="display:flex; justify-content:space-between"><small>${new Date(v.fecha_solicitud).toLocaleDateString()}</small> <span style="color:#2563eb; font-weight:bold">L. ${v.precio}</span></div><div>Cond: ${v.conductores?.perfiles?.nombre || '--'}</div><span class="badge ${badge}">${v.estado}</span></div>`; }); }
 async function abrirPerfil() { document.getElementById('profilePanel').style.display = 'flex'; const { data: { session } } = await window.supabaseClient.auth.getSession(); const { data: p } = await window.supabaseClient.from('perfiles').select('*').eq('id', session.user.id).single(); document.getElementById('pName').value = p.nombre; document.getElementById('pPhone').value = p.telefono; document.getElementById('pEmail').value = p.email; }
 async function guardarPerfil() { const n = document.getElementById('pName').value; const ph = document.getElementById('pPhone').value; const { data: { session } } = await window.supabaseClient.auth.getSession(); await window.supabaseClient.from('perfiles').update({ nombre: n, telefono: ph }).eq('id', session.user.id); alert("Perfil Actualizado"); document.getElementById('profilePanel').style.display='none'; }
-async function cerrarSesion() { if(confirm("¿Cerrar Sesión?")) { await window.supabaseClient.auth.signOut(); window.location.href = 'login.html'; } }
+async function cerrarSesion() { if(confirm("¿Cerrar Sesión?")) { await window.supabaseClient.auth.signOut(); window.location.href = 'login.html'; } }S

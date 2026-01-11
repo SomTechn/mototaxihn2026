@@ -216,8 +216,8 @@
         }
         setInterval(calcularResumenDiario, 15000); 
 
-        // ============================================
-// SLIDERS DE ACEPTAR/RECHAZAR - CÓDIGO A AGREGAR
+// ============================================
+// SLIDERS DE ACEPTAR/RECHAZAR - INTEGRACIÓN COMPLETA
 // ============================================
 
 function initSliders() {
@@ -225,7 +225,7 @@ function initSliders() {
     const sliderReject = document.getElementById('slideReject');
     
     if (!sliderAccept || !sliderReject) {
-        console.warn('Sliders no encontrados en el DOM');
+        console.warn('❌ Sliders no encontrados en el DOM');
         return;
     }
     
@@ -237,7 +237,9 @@ function initSliders() {
     let startX = 0;
     let currentX = 0;
     
+    // ============================================
     // SLIDER ACEPTAR (izquierda a derecha)
+    // ============================================
     function handleStartAccept(e) {
         isDraggingAccept = true;
         startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
@@ -274,7 +276,9 @@ function initSliders() {
         btnAccept.style.left = '4px';
     }
     
+    // ============================================
     // SLIDER RECHAZAR (derecha a izquierda)
+    // ============================================
     function handleStartReject(e) {
         isDraggingReject = true;
         startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
@@ -333,6 +337,43 @@ function initSliders() {
     
     console.log('✅ Sliders inicializados correctamente');
 }
+
+// ============================================
+// FUNCIONES DE CALLBACK
+// ============================================
+function aceptarDesdeSlider() {
+    console.log('🚀 Slider ACEPTAR completado');
+    
+    // Llamar a la función aceptarViaje() de app.js
+    if (typeof aceptarViaje === 'function') {
+        aceptarViaje();
+    } else {
+        console.error('❌ Función aceptarViaje no encontrada en app.js');
+    }
+}
+
+function rechazarDesdeSlider() {
+    console.log('❌ Slider RECHAZAR completado');
+    
+    // Llamar a la función rechazarViaje() de app.js
+    if (typeof rechazarViaje === 'function') {
+        rechazarViaje();
+    } else {
+        console.error('❌ Función rechazarViaje no encontrada en app.js');
+    }
+}
+
+// ============================================
+// AUTO-INICIALIZACIÓN
+// ============================================
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSliders);
+} else {
+    // DOM ya está listo, inicializar inmediatamente
+    initSliders();
+}
+
+console.log('📱 Código de sliders cargado');
 
 function aceptarDesdeSlider() {
     console.log('🚀 Slider ACEPTAR completado');

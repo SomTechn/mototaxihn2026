@@ -5,7 +5,8 @@ let chatSubscription;
 let routingControl; 
 let myPosition = null; 
 let previewMap = null; 
-let miSaldo = 0; 
+let miSaldo = 0;
+let countdownInterval = null; // Variable global para el temporizador
 
 // === INICIO APP ===
 window.addEventListener('load', async () => {
@@ -26,6 +27,7 @@ window.addEventListener('load', async () => {
         initMap(); 
         initRealtime();
         checkViajePendiente();
+        calcularResumenDiario();
     } catch (e) { console.error(e); }
 });
 
@@ -46,6 +48,7 @@ function initRealtime() {
             toggleStatus(); 
         }
     }).subscribe();
+    
     window.supabaseClient.channel('carreras_pendientes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'carreras', filter: 'estado=eq.buscando' }, p => { 
         if (isOnline && !currentTrip) { 
             sonarAlerta(); 
@@ -54,12 +57,21 @@ function initRealtime() {
     }).subscribe();
 }
 
-// === OFERTA CON MAPA Y ESTADÍSTICAS ===
+// === OFERTA CON MAPA Y CUENTA REGRESIVA ===
 function mostrarOferta(viaje) {
     currentTrip = viaje;
     document.getElementById('alertPrice').textContent = `L. ${viaje.precio}`;
-    document.getElementById('modalStats').textContent = "Calculando ruta..."; // Reset
+    document.getElementById('modalStats').textContent = "Calculando ruta...";
     document.getElementById('modalTrip').style.display = 'flex';
+    
+    // Resetear sliders
+    const btnAccept = document.querySelector('#slideAccept .slider-btn');
+    const btnReject = document.querySelector('#slideReject .slider-btn');
+    if (btnAccept) btnAccept.style.left = '4px';
+    if (btnReject) btnReject.style.right = '4px';
+    
+    // INICIAR CUENTA REGRESIVA DE 30 SEGUNDOS
+    iniciarCuentaRegresiva();
     
     if (!previewMap) { 
         previewMap = L.map('previewMap', { zoomControl: false, attributionControl: false }); 
@@ -87,7 +99,6 @@ function mostrarOferta(viaje) {
                 addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false 
             }).addTo(previewMap);
 
-            // Escuchar cuando la ruta se calcula para sacar Km y Min
             control.on('routesfound', function(e) {
                 const routes = e.routes;
                 const summary = routes[0].summary;
@@ -101,6 +112,119 @@ function mostrarOferta(viaje) {
             previewMap.setView([viaje.origen_lat, viaje.origen_lng], 14); 
         }
     }, 200);
+}
+
+// === FUNCIÓN DE CUENTA REGRESIVA ===
+function iniciarCuentaRegresiva() {
+    // Limpiar cualquier temporizador previo
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    
+    let segundosRestantes = 30;
+    const timerText = document.getElementById('timerText');
+    const timerFill = document.getElementById('timerFill');
+    
+    // Actualizar UI inicial
+    timerText.textContent = segundosRestantes;
+    timerFill.style.width = '100%';
+    
+    countdownInterval = setInterval(() => {
+        segundosRestantes--;
+        
+        // Actualizar texto
+        timerText.textContent = segundosRestantes;
+        
+        // Actualizar barra de progreso
+        const porcentaje = (segundosRestantes / 30) * 100;
+        timerFill.style.width = porcentaje + '%';
+        
+        // Cambiar color cuando queden 10 segundos
+        if (segundosRestantes <= 10) {
+            timerFill.style.background = '#ef4444'; // Rojo
+        }
+        
+        // Cuando llegue a 0, rechazar automáticamente
+        if (segundosRestantes <= 0) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            console.log("⏱️ Tiempo agotado, rechazando viaje automáticamente");
+            rechazarViajeAutomatico();
+        }
+    }, 1000);
+}
+
+// === RECHAZAR VIAJE (MANUAL O AUTOMÁTICO) ===
+function rechazarViajeAutomatico() {
+    if (!currentTrip || !currentTrip.id) {
+        cerrarModalOferta();
+        return;
+    }
+    
+    console.log("❌ Rechazando viaje automáticamente por timeout");
+    
+    // NO actualizar la carrera a "cancelada" - solo dejarla en "buscando"
+    // para que otros conductores puedan tomarla
+    
+    // Simplemente cerrar el modal y limpiar
+    cerrarModalOferta();
+}
+
+async function rechazarViaje() {
+    if (!currentTrip || !currentTrip.id) {
+        cerrarModalOferta();
+        return;
+    }
+    
+    console.log("❌ Conductor rechazó el viaje manualmente");
+    
+    try {
+        // NO actualizar el estado de la carrera
+        // Solo cerrar el modal para este conductor
+        // La carrera sigue en "buscando" para otros conductores
+        
+        cerrarModalOferta();
+        
+    } catch (e) {
+        console.error("Error al rechazar viaje:", e);
+        cerrarModalOferta();
+    }
+}
+
+function cerrarModalOferta() {
+    // Limpiar temporizador
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    
+    // Ocultar modal
+    document.getElementById('modalTrip').style.display = 'none';
+    
+    // Limpiar previewMap
+    if (previewMap) {
+        try {
+            previewMap.eachLayer((layer) => {
+                if (!layer._url) { // No remover el tile layer
+                    previewMap.removeLayer(layer);
+                }
+            });
+        } catch (e) {
+            console.error("Error limpiando mapa:", e);
+        }
+    }
+    
+    // Resetear sliders
+    const btnAccept = document.querySelector('#slideAccept .slider-btn');
+    const btnReject = document.querySelector('#slideReject .slider-btn');
+    if (btnAccept) btnAccept.style.left = '4px';
+    if (btnReject) btnReject.style.right = '4px';
+    
+    // Limpiar viaje actual
+    currentTrip = null;
+    
+    console.log("✅ Modal de oferta cerrado correctamente");
 }
 
 // === ESTADO Y GPS ===
@@ -128,15 +252,22 @@ function iniciarGPS() {
 }
 function detenerGPS() { if (watchId) navigator.geolocation.clearWatch(watchId); }
 
-// === VIAJE ===
+// === ACEPTAR VIAJE ===
 async function aceptarViaje() {
+    // Limpiar temporizador inmediatamente
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    
     // Ocultamos el modal visualmente primero
     document.getElementById('modalTrip').style.display = 'none';
 
     if (!currentTrip || !currentTrip.id) return;
 
+    console.log("🚀 Intentando aceptar viaje:", currentTrip.id);
+
     // === EL CANDADO DE SEGURIDAD ===
-    // Intentamos actualizar, PERO solo si el estado sigue siendo 'buscando'
     const { data, error } = await window.supabaseClient
         .from('carreras')
         .update({ 
@@ -144,31 +275,26 @@ async function aceptarViaje() {
             conductor_id: conductorId 
         })
         .eq('id', currentTrip.id)
-        .eq('estado', 'buscando') // <--- AQUÍ ESTÁ LA MAGIA
-        .select(); // Pedimos que nos devuelva el dato actualizado
+        .eq('estado', 'buscando') // Solo si sigue en "buscando"
+        .select();
 
     if (error) {
         console.error("Error al aceptar:", error);
-        return alert("Error de conexión. Intenta de nuevo.");
+        alert("Error de conexión. Intenta de nuevo.");
+        cerrarModalOferta();
+        return;
     }
 
     // === VERIFICAR QUIÉN GANÓ ===
-    // Si data está vacío ([]), significa que la condición .eq('estado', 'buscando') no se cumplió
-    // (es decir, alguien más ya lo tomó).
     if (!data || data.length === 0) {
         alert("⚠️ Lo sentimos, otro conductor ganó este viaje.");
-        
-        // Limpiamos todo para esperar el siguiente
-        currentTrip = null;
-        if(previewMap) { previewMap.remove(); previewMap = null; }
+        cerrarModalOferta();
         return;
     }
 
     // === SI LLEGAMOS AQUÍ, ES TUYO ===
-    // El viaje es oficialmente nuestro
     currentTrip = data[0]; 
     
-    // Cambiamos tu estado a ocupado
     await window.supabaseClient
         .from('conductores')
         .update({ estado: 'ocupado' })
@@ -176,7 +302,6 @@ async function aceptarViaje() {
 
     alert("✅ ¡Viaje asignado! Ve por el cliente.");
     
-    // Configuramos la interfaz de navegación
     configurarPanelViaje(); 
     initChat(currentTrip.id);
 }
@@ -210,6 +335,8 @@ async function avanzarViaje() {
                 isOnline = true; document.getElementById('btnStatus').textContent = "EN LÍNEA 🟢"; document.getElementById('btnStatus').className = "btn-status online";
                 await window.supabaseClient.from('conductores').update({ estado: 'disponible' }).eq('id', conductorId);
             }
+            
+            calcularResumenDiario();
         }
     } catch(e) { console.error(e); alert("Error: " + e.message); btn.textContent=txt; btn.disabled=false; }
 }
@@ -217,7 +344,6 @@ async function avanzarViaje() {
 function trazarRuta(lat1, lng1, lat2, lng2) {
     if (routingControl) { try { map.removeControl(routingControl); } catch(e){} }
     
-    // Crear ruta y escuchar cálculo para panel
     routingControl = L.Routing.control({ 
         waypoints: [L.latLng(lat1, lng1), L.latLng(lat2, lng2)], 
         createMarker: function() { return null; }, 
@@ -225,7 +351,6 @@ function trazarRuta(lat1, lng1, lat2, lng2) {
         addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false 
     }).addTo(map);
 
-    // Actualizar Stats en Panel Principal
     routingControl.on('routesfound', function(e) {
         const summary = e.routes[0].summary;
         const km = (summary.totalDistance / 1000).toFixed(1);
@@ -239,7 +364,7 @@ function configurarPanelViaje() {
     document.getElementById('tripPrice').textContent = `L. ${currentTrip.precio}`;
     document.getElementById('txtOrigen').textContent = currentTrip.origen_direccion || "Origen";
     document.getElementById('txtDestino').textContent = currentTrip.destino_direccion || "Destino";
-    document.getElementById('tripStats').textContent = "Calculando..."; // Reset
+    document.getElementById('tripStats').textContent = "Calculando...";
     
     const t = document.getElementById('tripStepTitle'); const b = document.getElementById('btnTripAction'); b.disabled = false;
     
@@ -272,7 +397,8 @@ async function checkViajePendiente() {
     if (data) { currentTrip = data; isOnline = true; configurarPanelViaje(); iniciarGPS(); initChat(currentTrip.id); document.getElementById('btnStatus').textContent = "EN VIAJE 🟢"; document.getElementById('btnStatus').className = "btn-status online"; } 
 }
 
-let clientPhone = ""; function contactarCliente() { if(!clientPhone) return alert("Sin número"); window.open(`https://wa.me/504${clientPhone}`, '_blank'); }
+let clientPhone = ""; 
+function contactarCliente() { if(!clientPhone) return alert("Sin número"); window.open(`https://wa.me/504${clientPhone}`, '_blank'); }
 function sonarAlerta() { const c = new (window.AudioContext||window.webkitAudioContext)(); const o = c.createOscillator(); o.connect(c.destination); o.start(); setTimeout(()=>o.stop(),800); }
 
 // === NUEVA RECARGA ===
@@ -291,7 +417,7 @@ async function enviarRecarga() {
     } catch(e) { console.error(e); alert("Error: "+e.message); btn.disabled=false; btn.innerText="REINTENTAR"; }
 }
 
-// === CHAT CORREGIDO ===
+// === CHAT ===
 function initChat(carreraId) { 
     const chatBody = document.getElementById('chatBody'); 
     chatBody.innerHTML = '<div style="text-align:center; color:#888; margin-top:10px"><small>Chat con Cliente</small></div>'; 
@@ -299,10 +425,9 @@ function initChat(carreraId) {
     if (chatSubscription) window.supabaseClient.removeChannel(chatSubscription); 
     chatSubscription = window.supabaseClient.channel('chat_' + carreraId).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `carrera_id=eq.${carreraId}` }, p => { 
         pintarMensaje(p.new); 
-        // LÓGICA DE ALERTA CORREGIDA: Si es mensaje de cliente y chat cerrado -> mostrar badge
         if (p.new.remitente_rol === 'cliente' && document.getElementById('chatModal').style.display === 'none') { 
             document.getElementById('badgeChat').style.display = 'block'; 
-            sonarAlerta(); // Reusamos sonido
+            sonarAlerta();
         } 
     }).subscribe(); 
 }
@@ -320,3 +445,13 @@ async function abrirHistorial() { document.getElementById('historyPanel').style.
 async function abrirPerfil() { document.getElementById('profilePanel').style.display='flex'; const {data:{session}} = await window.supabaseClient.auth.getSession(); const {data:p} = await window.supabaseClient.from('perfiles').select('*').eq('id', session.user.id).single(); const {data:c} = await window.supabaseClient.from('conductores').select('*').eq('id', conductorId).single(); document.getElementById('pName').value=p.nombre; document.getElementById('pPhone').value=p.telefono; document.getElementById('pMoto').value=c.modelo_moto; document.getElementById('pPlate').value=c.placa; document.getElementById('pEmail').value=p.email; }
 async function guardarPerfil() { const n=document.getElementById('pName').value; const ph=document.getElementById('pPhone').value; const m=document.getElementById('pMoto').value; const pl=document.getElementById('pPlate').value; const {data:{session}} = await window.supabaseClient.auth.getSession(); await window.supabaseClient.from('perfiles').update({nombre:n, telefono:ph}).eq('id', session.user.id); await window.supabaseClient.from('conductores').update({modelo_moto:m, placa:pl}).eq('id', conductorId); alert("✅ Guardado"); document.getElementById('profilePanel').style.display='none'; }
 async function cerrarSesion() { if(confirm("¿Salir?")) { await window.supabaseClient.auth.signOut(); window.location.href='login.html'; } }
+
+async function calcularResumenDiario() {
+    if(!window.supabaseClient || !conductorId) return;
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data } = await window.supabaseClient.from('carreras').select('precio').eq('conductor_id', conductorId).eq('estado', 'completada').gte('fecha_solicitud', hoy + 'T00:00:00').lte('fecha_solicitud', hoy + 'T23:59:59');
+    let totalHoy = 0; let viajesHoy = 0;
+    if(data) { viajesHoy = data.length; data.forEach(c => totalHoy += parseFloat(c.precio)); }
+    document.getElementById('todayTrips').innerText = `Viajes: ${viajesHoy}`;
+    document.getElementById('todayEarnings').innerText = `Ganado: L. ${totalHoy.toFixed(2)}`;
+}

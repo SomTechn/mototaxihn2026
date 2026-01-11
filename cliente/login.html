@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ingresar - Cliente</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/171/171239.png">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
     <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -56,6 +57,15 @@
         }
         .hidden { display: none; }
         .logo { font-size: 3rem; margin-bottom: 10px; }
+        .error-msg { 
+            background: #fee2e2; 
+            color: #991b1b; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-top: 10px;
+            font-size: 0.9rem;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -69,6 +79,7 @@
             <input type="email" id="lEmail" placeholder="Correo electrónico">
             <input type="password" id="lPass" placeholder="Contraseña">
             <button class="btn-main" onclick="iniciarSesion()" id="btnLogin">INGRESAR</button>
+            <div class="error-msg" id="loginError"></div>
             <a class="toggle-link" onclick="toggleForms()">¿No tienes cuenta? Regístrate</a>
         </div>
 
@@ -79,9 +90,10 @@
             <input type="text" id="rName" placeholder="Nombre Completo">
             <input type="tel" id="rPhone" placeholder="Teléfono Celular">
             <input type="email" id="rEmail" placeholder="Correo electrónico">
-            <input type="password" id="rPass" placeholder="Contraseña">
+            <input type="password" id="rPass" placeholder="Contraseña (mínimo 6 caracteres)">
             
             <button class="btn-main" onclick="registrarse()" id="btnRegister">REGISTRARME</button>
+            <div class="error-msg" id="registerError"></div>
             <a class="toggle-link" onclick="toggleForms()">¿Ya tienes cuenta? Ingresa</a>
         </div>
     </div>
@@ -89,101 +101,206 @@
     <script>
         // Verificar sesión al cargar
         window.onload = async () => {
-            if(!window.supabaseClient) return;
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if(session) window.location.href = 'index.html';
+            try {
+                if(!window.supabaseClient) {
+                    console.error("Supabase no inicializado");
+                    return;
+                }
+                
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                
+                if(session) {
+                    console.log("Sesión activa, redirigiendo...");
+                    window.location.href = 'index.html';
+                }
+            } catch (e) {
+                console.error("Error verificando sesión:", e);
+            }
         };
 
         function toggleForms() {
             document.getElementById('loginForm').classList.toggle('hidden');
             document.getElementById('registerForm').classList.toggle('hidden');
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('registerError').style.display = 'none';
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
         }
 
         // === INICIAR SESIÓN ===
         async function iniciarSesion() {
-            const email = document.getElementById('lEmail').value;
+            const email = document.getElementById('lEmail').value.trim();
             const password = document.getElementById('lPass').value;
             const btn = document.getElementById('btnLogin');
 
-            if(!email || !password) return alert("Ingresa correo y contraseña");
+            // Limpiar errores previos
+            document.getElementById('loginError').style.display = 'none';
+
+            if(!email || !password) {
+                showError('loginError', 'Ingresa correo y contraseña');
+                return;
+            }
 
             btn.innerText = "Verificando...";
             btn.disabled = true;
 
             try {
+                console.log("Intentando login con:", email);
+                
                 // 1. Login
-                const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) throw error;
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({ 
+                    email, 
+                    password 
+                });
+                
+                if (error) {
+                    console.error("Error en login:", error);
+                    throw error;
+                }
+
+                if (!data || !data.user) {
+                    throw new Error("No se recibió información del usuario");
+                }
+
+                console.log("Login exitoso, verificando rol...");
 
                 // 2. Verificar Rol (Seguridad: Que no sea conductor)
-                const { data: perfil } = await window.supabaseClient
+                const { data: perfil, error: perfilError } = await window.supabaseClient
                     .from('perfiles')
                     .select('rol')
                     .eq('id', data.user.id)
-                    .single();
+                    .maybeSingle();
+
+                if (perfilError) {
+                    console.error("Error obteniendo perfil:", perfilError);
+                    throw new Error("Error al verificar el perfil");
+                }
+
+                if (!perfil) {
+                    throw new Error("No se encontró el perfil del usuario");
+                }
+
+                console.log("Rol del usuario:", perfil.rol);
 
                 if (perfil.rol !== 'cliente') {
                     await window.supabaseClient.auth.signOut();
                     throw new Error("Esta cuenta NO es de pasajero.");
                 }
 
+                console.log("✅ Acceso autorizado, redirigiendo...");
                 window.location.href = 'index.html';
 
             } catch (e) {
-                alert(e.message);
+                console.error("Error completo:", e);
+                showError('loginError', e.message || "Error al iniciar sesión");
                 btn.innerText = "INGRESAR";
                 btn.disabled = false;
             }
         }
 
-        // === REGISTRO CORRECTO (TABLA CLIENTES) ===
-        // === REGISTRO CLIENTE (CORREGIDO CON UPSERT) ===
+        // === REGISTRO CLIENTE ===
         async function registrarse() {
-            const nombre = document.getElementById('rName').value;
-            const telefono = document.getElementById('rPhone').value;
-            const email = document.getElementById('rEmail').value;
+            const nombre = document.getElementById('rName').value.trim();
+            const telefono = document.getElementById('rPhone').value.trim();
+            const email = document.getElementById('rEmail').value.trim();
             const password = document.getElementById('rPass').value;
             const btn = document.getElementById('btnRegister');
 
-            if(!nombre || !telefono || !email || !password) return alert("Por favor completa TODOS los datos.");
+            // Limpiar errores previos
+            document.getElementById('registerError').style.display = 'none';
+
+            if(!nombre || !telefono || !email || !password) {
+                showError('registerError', 'Por favor completa TODOS los datos.');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('registerError', 'La contraseña debe tener al menos 6 caracteres.');
+                return;
+            }
 
             btn.innerText = "Creando cuenta...";
             btn.disabled = true;
 
             try {
+                console.log("Registrando usuario:", email);
+                
                 // 1. Crear Usuario en Auth
-                const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
-                if (error) throw error;
+                const { data, error } = await window.supabaseClient.auth.signUp({ 
+                    email, 
+                    password 
+                });
+                
+                if (error) {
+                    console.error("Error en signUp:", error);
+                    throw error;
+                }
+
+                if (!data || !data.user) {
+                    throw new Error("No se pudo crear la cuenta");
+                }
 
                 const userId = data.user.id;
+                console.log("Usuario creado, ID:", userId);
 
-                // 2. Insertar o Actualizar en PERFILES (Usamos upsert para evitar duplicados)
+                // 2. Insertar o Actualizar en PERFILES (Usamos upsert)
+                console.log("Creando perfil...");
                 const { error: errPerfil } = await window.supabaseClient.from('perfiles').upsert({
                     id: userId,
                     nombre: nombre,
                     telefono: telefono,
                     email: email,
                     rol: 'cliente'
+                }, {
+                    onConflict: 'id'
                 });
-                if (errPerfil) throw errPerfil;
+                
+                if (errPerfil) {
+                    console.error("Error creando perfil:", errPerfil);
+                    throw errPerfil;
+                }
 
                 // 3. Insertar en CLIENTES
-                // (Aquí también usamos upsert por seguridad, aunque insert funcionaría si es nuevo)
+                console.log("Creando registro de cliente...");
                 const { error: errCli } = await window.supabaseClient.from('clientes').upsert({
                     perfil_id: userId
+                }, {
+                    onConflict: 'perfil_id'
                 });
-                if (errCli) throw errCli;
+                
+                if (errCli) {
+                    console.error("Error creando cliente:", errCli);
+                    throw errCli;
+                }
 
+                console.log("✅ Registro completado exitosamente");
                 alert("¡Registro exitoso! Bienvenido.");
                 window.location.href = 'index.html';
 
             } catch (e) {
-                console.error(e);
-                alert("Error: " + e.message);
+                console.error("Error completo en registro:", e);
+                showError('registerError', e.message || "Error al registrar. Intenta con otro correo.");
                 btn.innerText = "REGISTRARME";
                 btn.disabled = false;
             }
         }
+        
+        // Permitir submit con Enter
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('lPass').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') iniciarSesion();
+            });
+            document.getElementById('rPass').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') registrarse();
+            });
+        });
     </script>
 </body>
 </html>

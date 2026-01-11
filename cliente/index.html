@@ -8,6 +8,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/171/171239.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/171/171239.png">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
@@ -37,7 +38,7 @@
             border-radius: 25px 25px 0 0;
             box-shadow: 0 -5px 30px rgba(0,0,0,0.1); z-index: 1000;
             transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            max-height: 80vh; overflow-y: auto; /* Aumenté un poco max-height */
+            max-height: 80vh; overflow-y: auto;
         }
         
         /* INPUTS DE DIRECCIÓN */
@@ -56,7 +57,7 @@
             text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
         }
 
-        /* --- NUEVOS ESTILOS PARA OFERTA Y NOTAS --- */
+        /* ESTILOS PARA OFERTA Y NOTAS */
         .offer-container {
             background: #eff6ff; padding: 15px; border-radius: 12px;
             border: 1px solid #dbeafe; margin-bottom: 15px;
@@ -77,7 +78,6 @@
             font-size: 0.95rem; margin-top: 10px; box-sizing: border-box;
             background: white;
         }
-        /* ----------------------------------------- */
 
         .btn-main {
             width: 100%; padding: 18px; border-radius: 14px; border: none;
@@ -114,6 +114,17 @@
         .bubble-me { align-self: flex-end; background: #2563eb; color: white; border-bottom-right-radius: 4px; }
         .bubble-other { align-self: flex-start; background: white; border: 1px solid #e2e8f0; color: #1e293b; border-bottom-left-radius: 4px; }
         .fs-modal { position: fixed; inset: 0; background: white; z-index: 4000; padding: 25px; display: none; flex-direction: column; overflow-y: auto; }
+        
+        .badge-done { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+        .badge-cancel { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+        .history-card { background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
+        
+        input[readonly] { cursor: not-allowed; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body>
@@ -121,7 +132,7 @@
     <div id="map"></div>
 
     <button class="top-btn btn-user" onclick="abrirPerfil()">👤</button>
-    <button class="top-btn btn-history" onclick="abrirHistorial()">🕒 Mis Viajes</button>
+    <button class="top-btn btn-history" onclick="abrirHistorial()">🕑 Mis Viajes</button>
 
     <div class="panel">
         
@@ -203,13 +214,31 @@
     <div id="chatModal" class="chat-modal">
         <div class="chat-header"><span>💬 Chat con Conductor</span><button onclick="cerrarChat()" style="background:none; border:none; font-size:1.5rem">✕</button></div>
         <div id="chatBody" class="chat-body"></div>
-        <div class="chat-footer"><input id="chatInput" type="text" placeholder="Escribe un mensaje..." style="flex:1; border:none; outline:none"><button onclick="enviarMensaje()" style="background:#2563eb; color:white; border:none; width:40px; height:40px; border-radius:50%">➤</button></div>
+        <div class="chat-footer"><input id="chatInput" type="text" placeholder="Escribe un mensaje..." style="flex:1; border:none; outline:none; padding:10px; border-radius:20px; background:#f1f5f9"><button onclick="enviarMensaje()" style="background:#2563eb; color:white; border:none; width:40px; height:40px; border-radius:50%">➤</button></div>
     </div>
+    
     <div id="profilePanel" class="fs-modal">
-        <div class="chat-header" style="padding:0 0 20px 0"><h2>Mi Perfil</h2><button onclick="document.getElementById('profilePanel').style.display='none'" style="border:none; background:none; font-size:1.5rem">✕</button></div>
-        <label>Nombre</label><input id="pName" style="background:#f8fafc"><label>Teléfono</label><input id="pPhone" style="background:#f8fafc"><label>Email</label><input id="pEmail" readonly style="background:#e2e8f0; color:#94a3b8"><button class="btn-main" onclick="guardarPerfil()" style="margin-top:20px">GUARDAR CAMBIOS</button><button class="btn-logout" onclick="cerrarSesion()" style="margin-top:auto">CERRAR SESIÓN</button>
+        <div style="display:flex; align-items:center; margin-bottom:20px">
+            <button onclick="document.getElementById('profilePanel').style.display='none'" style="border:none; background:none; font-size:1.5rem; cursor:pointer; margin-right:10px">←</button>
+            <h2 style="margin:0">Mi Perfil</h2>
+        </div>
+        <label style="display:block; margin-bottom:5px; color:#64748b; font-size:0.9rem">Nombre</label>
+        <input id="pName" style="width:100%; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:15px; box-sizing:border-box">
+        <label style="display:block; margin-bottom:5px; color:#64748b; font-size:0.9rem">Teléfono</label>
+        <input id="pPhone" style="width:100%; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:15px; box-sizing:border-box">
+        <label style="display:block; margin-bottom:5px; color:#64748b; font-size:0.9rem">Email</label>
+        <input id="pEmail" readonly style="width:100%; padding:12px; background:#e2e8f0; color:#94a3b8; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:20px; box-sizing:border-box">
+        <button class="btn-main" onclick="guardarPerfil()">GUARDAR CAMBIOS</button>
+        <button style="width:100%; padding:15px; background:#fee2e2; color:#ef4444; border:none; border-radius:10px; font-weight:bold; cursor:pointer; margin-top:20px" onclick="cerrarSesion()">CERRAR SESIÓN</button>
     </div>
-    <div id="historyPanel" class="fs-modal"><div class="chat-header" style="padding:0 0 20px 0"><h2>Mis Viajes</h2><button onclick="document.getElementById('historyPanel').style.display='none'" style="border:none; background:none; font-size:1.5rem">✕</button></div><div id="historyList">Cargando...</div></div>
+    
+    <div id="historyPanel" class="fs-modal">
+        <div style="display:flex; align-items:center; margin-bottom:20px">
+            <button onclick="document.getElementById('historyPanel').style.display='none'" style="border:none; background:none; font-size:1.5rem; cursor:pointer; margin-right:10px">←</button>
+            <h2 style="margin:0">Mis Viajes</h2>
+        </div>
+        <div id="historyList">Cargando...</div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>

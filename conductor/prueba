@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Somar Express - Delivery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    .brand-orange { color: #FF8C00; }
+    .bg-brand-orange { background-color: #FF8C00; }
+    .brand-black { color: #1A1A1A; }
+    .bg-brand-black { background-color: #1A1A1A; }
+    
+    .loading-screen {
+      background: linear-gradient(135deg, #FF8C00 0%, #FF6B00 100%);
+    }
+    
+    .loading-logo {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+    
+    .loading {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #FFFFFF;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-text {
+      height: 12px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    
+    .skeleton-card {
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    .carousel-container {
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .carousel-item {
+      scroll-snap-align: start;
+      flex-shrink: 0;
+    }
+    
+    .carousel-container::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .carousel-container {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    .carousel-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    
+    .carousel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #D1D5DB;
+      transition: all 0.3s;
+    }
+    
+    .carousel-dot.active {
+      background: #FF8C00;
+      width: 24px;
+      border-radius: 4px;
+    }
+    
+    .offers-banner {
+      background: linear-gradient(90deg, #FF8C00, #FF6B00, #FF8C00);
+      background-size: 200% 100%;
+      animation: gradient-shift 3s ease infinite;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .offers-scroll {
+      display: flex;
+      animation: scroll-left 20s linear infinite;
+      white-space: nowrap;
+    }
+    
+    @keyframes scroll-left {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    
+    .offers-scroll:hover {
+      animation-play-state: paused;
+    }
+    
+    .categorias-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .categorias-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.4s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .slide-up {
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    
+    .scale-in {
+      animation: scaleIn 0.2s ease-out;
+    }
+    
+    @keyframes scaleIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    .distance-badge {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Header Fixed con ubicación -->
+    <header class="bg-white sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="https://res.cloudinary.com/drkaxsziu/image/upload/v1767871213/Somar_Express_2048_x_2048_px_18_x_18_in__20250623_221102_0000_o0bv7a.png" alt="Somar Express" class="w-12 h-12 object-contain">
+        <div>
+          <p class="text-xs text-gray-500">Entregar en</p>
+          <button id="locationBtn" class="text-sm font-semibold flex items-center gap-1 hover:text-brand-orange transition">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+            </svg>
+            <span id="locationText">Obteniendo ubicación...</span>
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- NUEVA SECCIÓN: Botones de Usuario y Carrito -->
+      <div class="flex items-center gap-2">
+        <!-- Botón de Perfil (visible solo si hay sesión) -->
+        <button id="profileBtn" class="hidden relative p-2 hover:bg-gray-100 rounded-full transition">
+          <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+        </button>
+        
+        <!-- Botón de Carrito -->
+        <button id="cartBtn" class="relative p-2">
+          <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+          </svg>
+          <span id="cartCount" class="absolute -top-1 -right-1 bg-brand-orange text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+  <!-- Banner de Ofertas Especiales -->
+  <div class="offers-banner text-white py-2">
+    <div class="offers-scroll">
+      <div class="flex items-center gap-8 px-4">
+        <span class="font-bold">🎉 ¡Envío Gratis en pedidos mayores a L.300!</span>
+        <span class="font-bold">⚡ Delivery Express en 30 minutos</span>
+        <span class="font-bold">🆕 Nuevos comercios disponibles</span>
+        <span class="font-bold">💰 Ofertas especiales todos los días</span>
+      </div>
+      <div class="flex items-center gap-8 px-4">
+        <span class="font-bold">🎉 ¡Envío Gratis en pedidos mayores a L.300!</span>
+        <span class="font-bold">⚡ Delivery Express en 30 minutos</span>
+        <span class="font-bold">🆕 Nuevos comercios disponibles</span>
+        <span class="font-bold">💰 Ofertas especiales todos los días</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="loading-screen flex flex-col justify-center items-center h-screen">
+    <img src="https://res.cloudinary.com/drkaxsziu/image/upload/v1767871112/Somar_Express_2048_x_2048_px_18_x_18_in__20250623_221144_0000_fcsl1b.png" alt="Somar Express" class="loading-logo w-48 h-48 mb-6">
+    <div class="loading"></div>
+    <p class="text-white mt-4 font-semibold">Cargando delivery...</p>
+  </div>
+
+  <!-- Vista Principal: Categorías con Banner -->
+  <section id="categoriasSection" class="hidden">
+    <div class="bg-white pb-4">
+      <div class="carousel-container flex overflow-x-auto snap-x snap-mandatory px-4 gap-3 pt-4" id="bannerCarousel"></div>
+      <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+
+    <div class="bg-white mt-2 py-4">
+      <div class="max-w-7xl mx-auto px-4">
+        <h2 class="text-lg font-bold mb-4">Nuestras categorías</h2>
+        <div id="categoriasList" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+        <div id="categoriasLoader" class="hidden grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div class="skeleton skeleton-card p-4">
+            <div class="skeleton w-16 h-16 rounded-full mx-auto mb-2"></div>
+            <div class="skeleton skeleton-text w-3/4 mx-auto"></div>
+          </div>
+          <div class="skeleton skeleton-card p-4">
+            <div class="skeleton w-16 h-16 rounded-full mx-auto mb-2"></div>
+            <div class="skeleton skeleton-text w-3/4 mx-auto"></div>
+          </div>
+          <div class="skeleton skeleton-card p-4">
+            <div class="skeleton w-16 h-16 rounded-full mx-auto mb-2"></div>
+            <div class="skeleton skeleton-text w-3/4 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vista: Comercios de una Categoría -->
+  <section id="comerciosSection" class="hidden min-h-screen">
+    <div class="bg-white sticky top-16 z-40 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 py-3">
+        <button id="backToCategorias" class="flex items-center gap-2 text-gray-600 hover:text-brand-orange transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          <span class="font-semibold">Volver</span>
+        </button>
+        <h2 id="categoriaTitulo" class="text-xl font-bold mt-2 mb-3"></h2>
+        
+        <div class="flex gap-2 mb-3">
+          <div class="relative flex-1">
+            <input type="text" id="searchComercio" placeholder="Buscar comercio..." class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-10 focus:border-brand-orange focus:outline-none transition">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <select id="sortComercio" class="border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition bg-white">
+            <option value="default">Ordenar por</option>
+            <option value="distance">Distancia</option>
+            <option value="name">Nombre A-Z</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div id="comerciosList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+      <div id="comerciosLoader" class="hidden grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="skeleton skeleton-card">
+          <div class="skeleton w-full h-32"></div>
+          <div class="p-3">
+            <div class="skeleton skeleton-text w-3/4 mb-2"></div>
+            <div class="skeleton skeleton-text w-1/2"></div>
+          </div>
+        </div>
+        <div class="skeleton skeleton-card">
+          <div class="skeleton w-full h-32"></div>
+          <div class="p-3">
+            <div class="skeleton skeleton-text w-3/4 mb-2"></div>
+            <div class="skeleton skeleton-text w-1/2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vista: Productos del Comercio -->
+  <section id="productosSection" class="hidden min-h-screen">
+    <div class="bg-white">
+      <div class="max-w-7xl mx-auto px-4 py-3">
+        <button id="backBtn" class="flex items-center gap-2 text-gray-600 hover:text-brand-orange transition mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          <span class="font-semibold">Volver</span>
+        </button>
+        <div id="comercioHeader" class="mb-4"></div>
+        
+        <div class="flex gap-2 mt-3">
+          <div class="relative flex-1">
+            <input type="text" id="searchProducto" placeholder="Buscar producto..." class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-10 focus:border-brand-orange focus:outline-none transition">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <select id="sortProducto" class="border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition bg-white">
+            <option value="default">Ordenar por</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
+            <option value="name">Nombre A-Z</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div id="productosList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div id="productosLoader" class="hidden grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="skeleton skeleton-card">
+          <div class="skeleton w-full h-40"></div>
+          <div class="p-4">
+            <div class="skeleton skeleton-text w-3/4 mb-2"></div>
+            <div class="skeleton skeleton-text w-full mb-2"></div>
+            <div class="skeleton skeleton-text w-1/2"></div>
+          </div>
+        </div>
+      </div>
+      <button id="customProductBtn" class="mt-6 w-full bg-white border-2 border-dashed border-gray-300 hover:border-brand-orange text-gray-600 hover:text-brand-orange font-semibold py-4 rounded-xl transition">
+        ➕ No encuentro mi producto
+      </button>
+    </div>
+  </section>
+
+  <!-- Modal Carrito -->
+  <div id="cartModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center">
+    <div class="bg-white rounded-t-3xl md:rounded-2xl w-full md:max-w-2xl md:max-h-[90vh] overflow-hidden flex flex-col max-h-[85vh] slide-up">
+      <div class="p-6 border-b">
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold">Mi Carrito</h2>
+          <button id="closeCartBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div id="cartItems" class="flex-1 overflow-y-auto p-6"></div>
+      
+      <div class="p-6 border-t bg-gray-50">
+        <div class="flex justify-between text-xl font-bold mb-4">
+          <span>Total:</span>
+          <span class="brand-orange">L.<span id="cartTotal">0</span></span>
+        </div>
+        <button id="checkoutBtn" class="w-full bg-brand-orange text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg">
+          Continuar con el pedido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Checkout MEJORADO -->
+  <div id="checkoutModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center overflow-y-auto">
+    <div class="bg-white rounded-t-3xl md:rounded-2xl w-full md:max-w-lg max-h-[90vh] overflow-y-auto slide-up">
+      <div class="p-6">
+        <h2 class="text-2xl font-bold mb-6">Información de Entrega</h2>
+        <form id="checkoutForm">
+          <!-- Información Básica -->
+          <div class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Número de Celular *</label>
+            <input type="tel" id="celular" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" placeholder="+504 9999-9999">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Dirección de Entrega *</label>
+            <textarea id="direccion" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" rows="2" placeholder="Calle, colonia, referencias..."></textarea>
+            <p class="text-xs text-gray-500 mt-1">📍 Ubicación GPS ya capturada</p>
+          </div>
+
+          <!-- Método de Pago -->
+          <div class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Método de Pago *</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="relative cursor-pointer">
+                <input type="radio" name="metodoPago" value="efectivo" class="peer sr-only" checked>
+                <div class="border-2 border-gray-200 rounded-xl p-4 text-center peer-checked:border-brand-orange peer-checked:bg-orange-50 transition">
+                  <div class="text-2xl mb-1">💵</div>
+                  <div class="font-semibold">Efectivo</div>
+                </div>
+              </label>
+              <label class="relative cursor-pointer">
+                <input type="radio" name="metodoPago" value="transferencia" class="peer sr-only">
+                <div class="border-2 border-gray-200 rounded-xl p-4 text-center peer-checked:border-brand-orange peer-checked:bg-orange-50 transition">
+                  <div class="text-2xl mb-1">🏦</div>
+                  <div class="font-semibold">Transferencia</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Pago en Efectivo -->
+          <div id="efectivoSection" class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">¿Con cuánto vas a pagar?</label>
+            <input type="number" id="montoPago" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" placeholder="Ej: 500" step="0.01" min="0">
+            <div id="cambioDisplay" class="hidden mt-2 p-3 bg-green-50 border border-green-200 rounded-xl">
+              <p class="text-sm text-green-800">💰 Su cambio será: <span class="font-bold">L.<span id="cambioMonto">0.00</span></span></p>
+            </div>
+          </div>
+
+          <!-- Comprobante de Transferencia -->
+          <div id="transferenciaSection" class="hidden mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Comprobante de Transferencia *</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-brand-orange transition cursor-pointer" id="uploadArea">
+              <input type="file" id="comprobanteFile" accept="image/*" class="hidden">
+              <div id="uploadPlaceholder">
+                <div class="text-4xl mb-2">📸</div>
+                <p class="text-sm text-gray-600 font-semibold">Click para subir comprobante</p>
+                <p class="text-xs text-gray-500 mt-1">JPG, PNG (máx. 5MB)</p>
+              </div>
+              <div id="uploadPreview" class="hidden">
+                <img id="previewImg" class="mx-auto max-h-40 rounded-lg mb-2">
+                <p class="text-sm text-green-600 font-semibold">✓ Comprobante cargado</p>
+                <button type="button" id="removeComprobante" class="text-xs text-red-500 hover:text-red-700 mt-2">Cambiar imagen</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Propina para el Delivery -->
+          <div class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Propina para el Delivery (Opcional)</label>
+            <div class="grid grid-cols-4 gap-2 mb-2">
+              <button type="button" class="propina-btn border-2 border-gray-200 rounded-lg py-2 text-sm font-semibold hover:border-brand-orange transition" data-propina="0">L.0</button>
+              <button type="button" class="propina-btn border-2 border-gray-200 rounded-lg py-2 text-sm font-semibold hover:border-brand-orange transition" data-propina="10">L.10</button>
+              <button type="button" class="propina-btn border-2 border-gray-200 rounded-lg py-2 text-sm font-semibold hover:border-brand-orange transition" data-propina="20">L.20</button>
+              <button type="button" class="propina-btn border-2 border-gray-200 rounded-lg py-2 text-sm font-semibold hover:border-brand-orange transition" data-propina="50">L.50</button>
+            </div>
+            <input type="number" id="propinaCustom" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" placeholder="O ingresa otro monto" step="1" min="0">
+          </div>
+
+          <!-- Notas Especiales -->
+          <div class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Notas Especiales (Opcional)</label>
+            <textarea id="notasEspeciales" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" rows="3" placeholder="Ej: Tocar el timbre 2 veces, dejar en la puerta, sin cebolla, etc."></textarea>
+          </div>
+
+          <!-- Resumen Total -->
+          <div class="mb-6 p-4 bg-gray-50 rounded-xl">
+            <div class="flex justify-between text-sm mb-2">
+              <span>Subtotal:</span>
+              <span class="font-semibold">L.<span id="checkoutSubtotal">0.00</span></span>
+            </div>
+            <div class="flex justify-between text-sm mb-2 hidden" id="propinaRow">
+              <span>Propina:</span>
+              <span class="font-semibold brand-orange">L.<span id="checkoutPropina">0.00</span></span>
+            </div>
+            <div class="flex justify-between text-lg font-bold border-t pt-2 mt-2">
+              <span>TOTAL:</span>
+              <span class="brand-orange">L.<span id="checkoutTotal">0.00</span></span>
+            </div>
+          </div>
+
+          <!-- Botones -->
+          <div class="flex gap-3">
+            <button type="button" id="cancelCheckoutBtn" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-xl font-bold transition">
+              Cancelar
+            </button>
+            <button type="submit" class="flex-1 bg-brand-orange text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg">
+              Confirmar Pedido
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Producto Personalizado -->
+  <div id="customProductModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full scale-in">
+      <div class="p-6">
+        <h2 class="text-xl font-bold mb-4">Agregar Producto Personalizado</h2>
+        <form id="customProductForm">
+          <div class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Nombre del Producto</label>
+            <input type="text" id="customName" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition">
+          </div>
+          <div class="mb-4">
+            <label class="block font-semibold mb-2 text-sm text-gray-700">Precio Estimado (L.)</label>
+            <input type="number" id="customPrice" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" min="0" step="0.01">
+          </div>
+          <div class="flex gap-3">
+            <button type="button" id="cancelCustomBtn" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition">
+              Cancelar
+            </button>
+            <button type="submit" class="flex-1 bg-brand-orange text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition">
+              Agregar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzmnCMSGJOo5cjFB424vQ-6jNRRBQKWS3wVJlw4U-f3e_7utcXCgWf3zdrEtEFKPhL-g/exec';
+    
+    // CONFIGURACIÓN CLOUDINARY
+    const CLOUDINARY_CLOUD_NAME = 'drkaxsziu';
+    const CLOUDINARY_UPLOAD_PRESET = 'TRANSFERENCIAS';
+    
+    let appData = {
+      comercios: [],
+      categorias: [],
+      productos: [],
+      categoriasxcomercio: [],
+      cart: [],
+      currentComercio: null,
+      selectedCategoria: null,
+      userLocation: null,
+      userAddress: 'Obteniendo ubicación...',
+      searchTermComercio: '',
+      searchTermProducto: '',
+      sortComercio: 'default',
+      sortProducto: 'default',
+      comerciosConDistancia: []
+    };
+
+    // SISTEMA DE AUTENTICACIÓN
+let authData = {
+  usuario: null,
+  numeroTemporal: '',
+  isAuthenticated: false
+};
+
+    // HAVERSINE: Cálculo de distancia en línea recta
+    function calcularDistanciaHaversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // OSRM: Cálculo de distancia por carretera
+    async function calcularDistanciaCarretera(comercioGPS, usuarioGPS) {
+      try {
+        if (!comercioGPS || !usuarioGPS || comercioGPS === '' || usuarioGPS === '') {
+          return { exito: false };
+        }
+
+        const comercioStr = String(comercioGPS).trim().replace(/\s+/g, '');
+        const usuarioStr = String(usuarioGPS).trim().replace(/\s+/g, '');
+        
+        if (!comercioStr.includes(',') || !usuarioStr.includes(',')) {
+          return { exito: false };
+        }
+
+        const [comercioLat, comercioLon] = comercioStr.split(',').map(s => parseFloat(s.trim()));
+        const [usuarioLat, usuarioLon] = usuarioStr.split(',').map(s => parseFloat(s.trim()));
+        
+        if (isNaN(comercioLat) || isNaN(comercioLon) || isNaN(usuarioLat) || isNaN(usuarioLon)) {
+          return { exito: false };
+        }
+        
+        if (Math.abs(comercioLat) > 90 || Math.abs(comercioLon) > 180 || 
+            Math.abs(usuarioLat) > 90 || Math.abs(usuarioLon) > 180) {
+          return { exito: false };
+        }
+        
+        const url = `https://router.project-osrm.org/route/v1/driving/${comercioLon},${comercioLat};${usuarioLon},${usuarioLat}?overview=false`;
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          const data = await response.json();
+          
+          if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+            const distanciaMetros = data.routes[0].distance;
+            const distanciaKm = (distanciaMetros / 1000).toFixed(1);
+            const duracionMinutos = Math.round(data.routes[0].duration / 60);
+            
+            return { distancia: distanciaKm, duracion: duracionMinutos, exito: true };
+          }
+          
+          return { exito: false };
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          return { exito: false };
+        }
+      } catch (error) {
+        return { exito: false };
+      }
+    }
+
+    // MÉTODO HÍBRIDO: Haversine + OSRM
+    async function calcularDistanciasComercios() {
+      const comerciosFiltrados = appData.comercios.filter(c => c.CATEGORIA == appData.selectedCategoria);
+      
+      console.log('\n🎯 === CÁLCULO HÍBRIDO ===');
+      
+      if (!appData.userLocation) {
+        appData.comerciosConDistancia = comerciosFiltrados.map(c => ({...c, distancia: null, duracion: null}));
+        return;
+      }
+
+      const [usuarioLat, usuarioLon] = appData.userLocation.split(',').map(s => parseFloat(s.trim()));
+
+      // PASO 1: HAVERSINE
+      const comerciosConHaversine = comerciosFiltrados.map(comercio => {
+        const gpsComercio = comercio['GPS COMERCIO'] || comercio['GPS_COMERCIO'] || comercio.GPS || comercio['GPS COORDENADAS'];
+        
+        if (gpsComercio && String(gpsComercio).trim() !== '') {
+          try {
+            const comercioStr = String(gpsComercio).trim().replace(/\s+/g, '');
+            const [comercioLat, comercioLon] = comercioStr.split(',').map(s => parseFloat(s.trim()));
+            
+            if (!isNaN(comercioLat) && !isNaN(comercioLon)) {
+              const distanciaKm = calcularDistanciaHaversine(comercioLat, comercioLon, usuarioLat, usuarioLon);
+              const duracionMinutos = Math.round(distanciaKm * 3);
+              
+              return {
+                ...comercio,
+                distanciaLineaRecta: distanciaKm,
+                distancia: distanciaKm.toFixed(1),
+                duracion: duracionMinutos,
+                gpsComercio: gpsComercio
+              };
+            }
+          } catch (error) {
+            console.error('Error Haversine:', comercio.COMERCIO, error);
+          }
+        }
+        
+        return {...comercio, distancia: null, duracion: null};
+      });
+
+      appData.comerciosConDistancia = comerciosConHaversine;
+      renderComercios();
+
+      // PASO 2: OSRM para los 5 más cercanos
+      const comerciosCercanos = comerciosConHaversine
+        .filter(c => c.distanciaLineaRecta !== undefined)
+        .sort((a, b) => a.distanciaLineaRecta - b.distanciaLineaRecta)
+        .slice(0, 5);
+
+      const promesasOSRM = comerciosCercanos.map(async (comercio) => {
+        const resultado = await calcularDistanciaCarretera(comercio.gpsComercio, appData.userLocation);
+        
+        if (resultado.exito) {
+          return {
+            id: comercio.ID,
+            distancia: resultado.distancia,
+            duracion: resultado.duracion
+          };
+        }
+        return null;
+      });
+
+      const resultadosOSRM = await Promise.all(promesasOSRM);
+
+      resultadosOSRM.forEach(resultado => {
+        if (resultado) {
+          const index = appData.comerciosConDistancia.findIndex(c => c.ID === resultado.id);
+          if (index !== -1) {
+            appData.comerciosConDistancia[index].distancia = resultado.distancia;
+            appData.comerciosConDistancia[index].duracion = resultado.duracion;
+          }
+        }
+      });
+
+      renderComercios();
+    }
+
+    function obtenerUbicacion() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            appData.userLocation = `${lat},${lon}`;
+            
+            try {
+              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+              const data = await response.json();
+              
+              if (data.address) {
+                const ciudad = data.address.city || data.address.town || data.address.municipality || 'Honduras';
+                const estado = data.address.state || '';
+                appData.userAddress = `${ciudad}${estado ? ', ' + estado : ''}`;
+              } else {
+                appData.userAddress = 'Ubicación obtenida';
+              }
+            } catch (error) {
+              appData.userAddress = 'Ubicación obtenida';
+            }
+            
+            document.getElementById('locationText').textContent = appData.userAddress;
+          },
+          (error) => {
+            appData.userAddress = 'Choloma, Cortés';
+            appData.userLocation = '15.6100,-87.9533';
+            document.getElementById('locationText').textContent = appData.userAddress;
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      } else {
+        appData.userAddress = 'Choloma, Cortés';
+        appData.userLocation = '15.6100,-87.9533';
+        document.getElementById('locationText').textContent = appData.userAddress;
+      }
+    }
+
+function getImageUrl(imageUrl, defaultText) {
+  if (!imageUrl || imageUrl.trim() === '') {
+    // Extraer iniciales del texto
+    const palabras = defaultText.split(' ');
+    const iniciales = palabras.length > 1 
+      ? palabras[0].charAt(0) + palabras[palabras.length - 1].charAt(0)
+      : palabras[0].substring(0, 2);
+    
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(iniciales)}&background=FF8C00&color=fff&size=400&bold=true`;
+  }
+  
+  if (imageUrl.startsWith('COMERCIOS_Images/') || imageUrl.startsWith('data:image/') || imageUrl.includes('IMAGEN.')) {
+    const palabras = defaultText.split(' ');
+    const iniciales = palabras.length > 1 
+      ? palabras[0].charAt(0) + palabras[palabras.length - 1].charAt(0)
+      : palabras[0].substring(0, 2);
+    
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(iniciales)}&background=FF8C00&color=fff&size=400&bold=true`;
+  }
+  
+  if (imageUrl.includes('drive.google.com')) {
+    let fileId = '';
+    if (imageUrl.includes('/file/d/')) {
+      fileId = imageUrl.split('/file/d/')[1].split('/')[0];
+    } else if (imageUrl.includes('?id=')) {
+      fileId = imageUrl.split('?id=')[1].split('&')[0];
+    } else if (imageUrl.includes('uc?id=')) {
+      fileId = imageUrl.split('uc?id=')[1].split('&')[0];
+    }
+    if (fileId) {
+      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+  }
+  return imageUrl;
+}
+
+
+        // ============================================
+// SISTEMA DE AUTENTICACIÓN
+// ============================================
+
+function verificarSesion() {
+  const usuarioGuardado = localStorage.getItem('somarExpressUser');
+  if (usuarioGuardado) {
+    try {
+      authData.usuario = JSON.parse(usuarioGuardado);
+      authData.isAuthenticated = true;
+      document.getElementById('authModal').classList.add('hidden');
+      actualizarUIUsuario();
+      console.log('✅ Sesión activa:', authData.usuario);
+      return true;
+    } catch (error) {
+      localStorage.removeItem('somarExpressUser');
+    }
+  }
+  return false;
+}
+
+async function enviarCodigoVerificacion(numero) {
+  try {
+    const submitBtn = document.querySelector('#authPhoneForm button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Enviando código...';
+    submitBtn.disabled = true;
+
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'enviarCodigoVerificacion',
+        numero: numero
+      })
+    });
+
+    authData.numeroTemporal = numero;
+    document.getElementById('phoneDisplay').textContent = numero;
+    document.getElementById('authStep1').classList.add('hidden');
+    document.getElementById('authStep2').classList.remove('hidden');
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+    alert('✅ Te hemos enviado un código de 6 dígitos por WhatsApp');
+  } catch (error) {
+    console.error('Error:', error);
+    alert('⚠️ Error al enviar código. Intenta nuevamente.');
+  }
+}
+
+async function verificarCodigoIngresado(codigo) {
+  try {
+    const submitBtn = document.querySelector('#authCodeForm button[type="submit"]');
+    submitBtn.textContent = 'Verificando...';
+    submitBtn.disabled = true;
+
+    // USAR GET CON PARÁMETROS URL EN LUGAR DE POST
+    const url = `${SCRIPT_URL}?action=verificarCodigo&numero=${encodeURIComponent(authData.numeroTemporal)}&codigo=${encodeURIComponent(codigo)}`;
+    
+    const response = await fetch(url, {
+      method: 'GET'  // ← CAMBIAR A GET
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      if (result.usuarioExiste) {
+        authData.usuario = result.datosUsuario;
+        authData.isAuthenticated = true;
+        localStorage.setItem('somarExpressUser', JSON.stringify(authData.usuario));
+        actualizarUIUsuario();
+        document.getElementById('authModal').classList.add('hidden');
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        alert(`¡Bienvenido de nuevo, ${result.datosUsuario.nombre}!`);
+      } else {
+        document.getElementById('authStep2').classList.add('hidden');
+        document.getElementById('authStep3').classList.remove('hidden');
+      }
+    } else {
+      alert(result.error || 'Código incorrecto');
+      submitBtn.textContent = 'Verificar Código';
+      submitBtn.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('⚠️ Error al verificar código');
+    submitBtn.textContent = 'Verificar Código';
+    submitBtn.disabled = false;
+  }
+}
+
+async function completarRegistroUsuario(nombre, direccion) {
+  try {
+    const submitBtn = document.querySelector('#authRegisterForm button[type="submit"]');
+    submitBtn.textContent = 'Registrando...';
+    submitBtn.disabled = true;
+
+    // USAR GET CON PARÁMETROS URL
+    const params = new URLSearchParams({
+      action: 'completarRegistro',
+      celular: authData.numeroTemporal,
+      nombre: nombre,
+      direccion: direccion,
+      ubicacionGPS: appData.userLocation || ''
+    });
+
+    const response = await fetch(`${SCRIPT_URL}?${params.toString()}`, {
+      method: 'GET'
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      authData.usuario = result.usuario;
+      authData.isAuthenticated = true;
+      localStorage.setItem('somarExpressUser', JSON.stringify(authData.usuario));
+      actualizarUIUsuario();
+      document.getElementById('authModal').classList.add('hidden');
+      confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+      alert(`¡Bienvenido a Somar Express, ${nombre}!`);
+    } else {
+      alert(result.error || 'Error al completar registro');
+      submitBtn.textContent = 'Completar Registro';
+      submitBtn.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('⚠️ Error al completar registro');
+    submitBtn.textContent = 'Completar Registro';
+    submitBtn.disabled = false;
+  }
+}
+
+function cerrarSesion() {
+  if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+    localStorage.removeItem('somarExpressUser');
+    authData.usuario = null;
+    authData.isAuthenticated = false;
+    location.reload();
+  }
+}
+
+// Mostrar/ocultar botón de perfil según sesión
+function actualizarUIUsuario() {
+  const profileBtn = document.getElementById('profileBtn');
+  if (authData.isAuthenticated && authData.usuario) {
+    profileBtn.classList.remove('hidden');
+  } else {
+    profileBtn.classList.add('hidden');
+  }
+}
+
+// Cargar datos del perfil en el modal
+async function cargarPerfilUsuario() {
+  if (!authData.usuario || !authData.usuario.celular) {
+    alert('No hay sesión activa');
+    return;
+  }
+  
+  try {
+    const url = `${SCRIPT_URL}?action=obtenerPerfil&celular=${encodeURIComponent(authData.usuario.celular)}`;
+    const response = await fetch(url);
+    const result = await response.json();
+    
+    if (result.success) {
+      const usuario = result.usuario;
+      
+      // Actualizar modal
+      const inicial = usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : 'U';
+      document.getElementById('profileInitial').textContent = inicial;
+      document.getElementById('profileNombre').textContent = usuario.nombre || 'Usuario';
+      document.getElementById('profileCelular').textContent = usuario.celular || '';
+      document.getElementById('profileDireccion').textContent = usuario.direccion || 'No especificada';
+      
+      // Formatear fecha
+      if (usuario.fechaRegistro) {
+        const fecha = new Date(usuario.fechaRegistro);
+        const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('profileFecha').textContent = fecha.toLocaleDateString('es-HN', opciones);
+      }
+      
+      // Mostrar modal
+      document.getElementById('profileModal').classList.remove('hidden');
+    } else {
+      alert('Error al cargar perfil');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al cargar perfil');
+  }
+}
+
+    window.addEventListener('DOMContentLoaded', async () => {
+  verificarSesion(); // ← AGREGAR ESTA LÍNEA
+  obtenerUbicacion();
+      
+      try {
+        const response = await fetch(SCRIPT_URL + '?action=getData');
+        const data = await response.json();
+        loadApp(data);
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('loading').innerHTML = `
+          <div class="text-center text-white">
+            <p class="font-bold mb-2 text-xl">Error al cargar datos</p>
+            <button onclick="location.reload()" class="mt-4 bg-white text-brand-orange px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition">
+              Reintentar
+            </button>
+          </div>
+        `;
+      }
+    });
+
+    function loadApp(data) {
+      if (!data.success) {
+        alert('Error al cargar datos: ' + data.error);
+        return;
+      }
+
+      appData.comercios = data.comercios;
+      appData.categorias = data.categorias;
+      appData.productos = data.productos;
+      appData.categoriasxcomercio = data.categoriasxcomercio;
+
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('categoriasSection').classList.remove('hidden');
+
+      renderBanners();
+      renderCategoriasCards();
+      setupEventListeners();
+      
+      autoScrollBanners();
+    }
+
+    function autoScrollBanners() {
+      const carousel = document.getElementById('bannerCarousel');
+      let scrollInterval = setInterval(() => {
+        const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+        const currentScroll = carousel.scrollLeft;
+        
+        if (currentScroll >= maxScroll) {
+          carousel.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          carousel.scrollBy({ left: carousel.querySelector('.carousel-item').offsetWidth + 12, behavior: 'smooth' });
+        }
+      }, 4000);
+      
+      carousel.addEventListener('touchstart', () => clearInterval(scrollInterval));
+      carousel.addEventListener('mouseenter', () => clearInterval(scrollInterval));
+      carousel.addEventListener('mouseleave', () => {
+        scrollInterval = setInterval(() => {
+          const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+          const currentScroll = carousel.scrollLeft;
+          
+          if (currentScroll >= maxScroll) {
+            carousel.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            carousel.scrollBy({ left: carousel.querySelector('.carousel-item').offsetWidth + 12, behavior: 'smooth' });
+          }
+        }, 4000);
+      });
+    }
+
+    function renderBanners() {
+      const banners = [
+        { title: 'Envío Gratis', subtitle: 'En pedidos mayores a L.300', color: 'bg-gradient-to-r from-orange-500 to-red-500' },
+        { title: 'Nuevos Comercios', subtitle: 'Descubre más opciones', color: 'bg-gradient-to-r from-blue-500 to-purple-500' },
+        { title: 'Delivery Express', subtitle: 'En 30 minutos o menos', color: 'bg-gradient-to-r from-green-500 to-teal-500' }
+      ];
+
+      const carousel = document.getElementById('bannerCarousel');
+      const dots = document.getElementById('carouselDots');
+
+      carousel.innerHTML = banners.map((banner, i) => `
+        <div class="carousel-item ${banner.color} rounded-2xl p-6 text-white w-[calc(100%-1rem)] min-w-[280px]">
+          <h3 class="text-2xl font-bold mb-1">${banner.title}</h3>
+          <p class="text-sm opacity-90">${banner.subtitle}</p>
+        </div>
+      `).join('');
+
+      dots.innerHTML = banners.map((_, i) => `
+        <div class="carousel-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>
+      `).join('');
+
+      carousel.addEventListener('scroll', () => {
+        const scrollLeft = carousel.scrollLeft;
+        const itemWidth = carousel.querySelector('.carousel-item').offsetWidth + 12;
+        const activeIndex = Math.round(scrollLeft / itemWidth);
+        
+        document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+          dot.classList.toggle('active', i === activeIndex);
+        });
+      });
+    }
+
+    function renderCategoriasCards() {
+      const list = document.getElementById('categoriasList');
+      const loader = document.getElementById('categoriasLoader');
+      
+      loader.classList.remove('hidden');
+      loader.classList.add('grid');
+      list.innerHTML = '';
+      
+      setTimeout(() => {
+        loader.classList.add('hidden');
+        loader.classList.remove('grid');
+        
+        list.innerHTML = appData.categorias.map(cat => {
+          const categoriaRowId = cat['🔒 Row ID'] || cat['Row ID'] || cat.ROWID || '';
+          if (!categoriaRowId) return '';
+          
+          const imageUrl = getImageUrl(cat.IMAGEN, cat.CATEGORIA);
+          const placeholderUrl = 'https://placehold.co/200/FF8C00/FFFFFF/png?text=' + encodeURIComponent(cat.CATEGORIA.substring(0, 2));
+          
+          return `
+            <div class="categoria-card cursor-pointer group fade-in" data-categoria="${cat.CATEGORIA}" data-rowid="${categoriaRowId}">
+              <div class="bg-orange-50 rounded-2xl p-4 flex flex-col items-center text-center transition group-hover:shadow-lg group-hover:scale-105">
+                <div class="w-16 h-16 mb-2 rounded-full overflow-hidden bg-white shadow-sm">
+                  <img src="${imageUrl}" alt="${cat.CATEGORIA}" class="w-full h-full object-cover" onerror="this.src='${placeholderUrl}'">
+                </div>
+                <p class="text-sm font-semibold text-gray-800">${cat.CATEGORIA}</p>
+              </div>
+            </div>
+          `;
+        }).filter(Boolean).join('');
+
+        document.querySelectorAll('.categoria-card').forEach(card => {
+          card.addEventListener('click', (e) => {
+            const categoria = e.currentTarget.dataset.categoria;
+            const rowId = e.currentTarget.dataset.rowid;
+            openCategoria(categoria, rowId);
+          });
+        });
+      }, 500);
+    }
+
+    async function openCategoria(nombreCategoria, rowId) {
+      appData.selectedCategoria = rowId;
+      document.getElementById('categoriasSection').classList.add('hidden');
+      document.getElementById('comerciosSection').classList.remove('hidden');
+      document.getElementById('categoriaTitulo').textContent = nombreCategoria;
+      
+      const loader = document.getElementById('comerciosLoader');
+      loader.classList.remove('hidden');
+      loader.classList.add('grid');
+      document.getElementById('comerciosList').innerHTML = '';
+      
+      await calcularDistanciasComercios();
+      
+      loader.classList.add('hidden');
+      loader.classList.remove('grid');
+    }
+
+    function renderComercios() {
+      let comerciosFiltrados = [...appData.comerciosConDistancia];
+      
+      if (appData.searchTermComercio) {
+        const searchLower = appData.searchTermComercio.toLowerCase();
+        comerciosFiltrados = comerciosFiltrados.filter(c => 
+          c.COMERCIO.toLowerCase().includes(searchLower) ||
+          (c.SECTOR && c.SECTOR.toLowerCase().includes(searchLower)) ||
+          (c.CIUDAD && c.CIUDAD.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      if (appData.sortComercio === 'distance') {
+        comerciosFiltrados.sort((a, b) => {
+          if (a.distancia === null) return 1;
+          if (b.distancia === null) return -1;
+          return parseFloat(a.distancia) - parseFloat(b.distancia);
+        });
+      } else if (appData.sortComercio === 'name') {
+        comerciosFiltrados.sort((a, b) => a.COMERCIO.localeCompare(b.COMERCIO));
+      }
+      
+      const list = document.getElementById('comerciosList');
+      const loader = document.getElementById('comerciosLoader');
+      
+      loader.classList.add('hidden');
+      loader.classList.remove('grid');
+      
+      if (comerciosFiltrados.length === 0) {
+        list.innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <p class="text-gray-500 text-lg">😔 ${appData.searchTermComercio ? 'No se encontraron comercios' : 'No hay comercios disponibles'}</p>
+            ${appData.searchTermComercio ? '<p class="text-sm text-gray-400 mt-2">Intenta con otro término de búsqueda</p>' : ''}
+          </div>
+        `;
+        return;
+      }
+      
+      list.innerHTML = comerciosFiltrados.map(c => {
+        const abierto = c['ABIERTO?'] === 'SI' || c['ABIERTO?'] === true || c['ABIERTO?'] === 'TRUE';
+        const imageUrl = getImageUrl(c.IMAGEN, c.COMERCIO);
+        const placeholderUrl = 'https://placehold.co/300/1A1A1A/FFFFFF/png?text=' + encodeURIComponent(c.COMERCIO.substring(0, 2));
+        
+        return `
+          <div class="comercio-card bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition cursor-pointer ${!abierto ? 'opacity-60' : ''} fade-in" data-id="${c.ID}">
+            <div class="relative">
+              <img src="${imageUrl}" alt="${c.COMERCIO}" class="w-full h-32 object-cover" onerror="this.src='${placeholderUrl}'">
+              ${c.distancia ? `
+                <div class="absolute top-2 right-2 distance-badge text-white px-2 py-1 rounded-lg text-xs font-bold">
+                  📍 ${c.distancia} km
+                </div>
+              ` : ''}
+              ${!abierto ? '<div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center"><span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">Cerrado</span></div>' : ''}
+            </div>
+            <div class="p-3">
+              <h3 class="font-bold text-sm mb-1">${c.COMERCIO}</h3>
+              <p class="text-xs text-gray-500">${c.SECTOR || c.CIUDAD || ''}</p>
+              ${c.duracion ? `<p class="text-xs text-blue-600 font-semibold mt-1">🚗 ${c.duracion} min aprox.</p>` : ''}
+              ${abierto ? '<p class="text-xs text-green-600 font-semibold mt-1">🟢 Abierto</p>' : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.comercio-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          openComercio(id);
+        });
+      });
+    }
+
+    function openComercio(id) {
+      appData.currentComercio = appData.comercios.find(c => c.ID == id);
+      if (!appData.currentComercio) return;
+
+      document.getElementById('comerciosSection').classList.add('hidden');
+      document.getElementById('productosSection').classList.remove('hidden');
+
+      const header = document.getElementById('comercioHeader');
+      const imageUrl = getImageUrl(appData.currentComercio.IMAGEN, appData.currentComercio.COMERCIO);
+      const iniciales = (appData.currentComercio.COMERCIO || 'C').substring(0, 2);
+      const placeholderUrl = 'https://placehold.co/300/1A1A1A/FFFFFF/png?text=' + encodeURIComponent(iniciales);
+      
+      header.innerHTML = `
+        <div class="flex items-center gap-4 fade-in">
+          <img src="${imageUrl}" alt="${appData.currentComercio.COMERCIO}" class="w-16 h-16 rounded-xl object-cover shadow-sm" onerror="this.src='${placeholderUrl}'">
+          <div>
+            <h2 class="text-xl font-bold">${appData.currentComercio.COMERCIO}</h2>
+            <p class="text-sm text-gray-600">${appData.currentComercio.DIRECCION || ''}</p>
+            <p class="text-xs text-gray-500">${appData.currentComercio.HORARIOS || ''}</p>
+          </div>
+        </div>
+      `;
+
+      renderProductos();
+    }
+
+    function renderProductos() {
+      let productos = appData.productos.filter(p => p.COMERCIO == appData.currentComercio.ID);
+      
+      if (appData.searchTermProducto) {
+        const searchLower = appData.searchTermProducto.toLowerCase();
+        productos = productos.filter(p => 
+          p.NOMBRE.toLowerCase().includes(searchLower) ||
+          (p.DESCRIPCION && p.DESCRIPCION.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      if (appData.sortProducto === 'price-asc') {
+        productos.sort((a, b) => parseFloat(a.PRECIO || 0) - parseFloat(b.PRECIO || 0));
+      } else if (appData.sortProducto === 'price-desc') {
+        productos.sort((a, b) => parseFloat(b.PRECIO || 0) - parseFloat(a.PRECIO || 0));
+      } else if (appData.sortProducto === 'name') {
+        productos.sort((a, b) => a.NOMBRE.localeCompare(b.NOMBRE));
+      }
+      
+      const list = document.getElementById('productosList');
+      const loader = document.getElementById('productosLoader');
+
+      loader.classList.remove('hidden');
+      loader.classList.add('grid');
+      list.innerHTML = '';
+      
+      setTimeout(() => {
+        loader.classList.add('hidden');
+        loader.classList.remove('grid');
+        
+        if (productos.length === 0) {
+          if (appData.searchTermProducto) {
+            list.innerHTML = `
+              <div class="col-span-full bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center fade-in">
+                <p class="text-lg font-semibold text-blue-800 mb-2">🔍 No se encontraron productos</p>
+                <p class="text-sm text-blue-700">Intenta con otro término de búsqueda o agrega un producto personalizado</p>
+              </div>
+            `;
+          } else {
+            list.innerHTML = `
+              <div class="col-span-full bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center fade-in">
+                <p class="text-lg font-semibold text-yellow-800 mb-2">⚠️ Este comercio no tiene productos registrados</p>
+                <p class="text-sm text-yellow-700">Puedes agregar un producto personalizado</p>
+              </div>
+            `;
+          }
+          return;
+        }
+
+        list.innerHTML = productos.map(p => {
+          const imageUrl = getImageUrl(p.IMAGEN, p.NOMBRE);
+          const placeholderUrl = 'https://placehold.co/300/1A1A1A/FFFFFF/png?text=' + encodeURIComponent((p.NOMBRE || 'P').substring(0, 1));
+          
+          return `
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition fade-in">
+              <img src="${imageUrl}" alt="${p.NOMBRE}" class="w-full h-40 object-cover" onerror="this.src='${placeholderUrl}'">
+              <div class="p-4">
+                <h3 class="font-bold text-base mb-1">${p.NOMBRE}</h3>
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">${p.DESCRIPCION || ''}</p>
+                <div class="flex justify-between items-center">
+                  <span class="text-xl font-bold brand-orange">L.${parseFloat(p.PRECIO || 0).toFixed(2)}</span>
+                  <button class="add-to-cart bg-brand-orange text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-600 transition" data-producto='${JSON.stringify(p).replace(/'/g, "&#39;")}'>
+                    Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const producto = JSON.parse(e.target.dataset.producto.replace(/&#39;/g, "'"));
+            addToCart(producto);
+          });
+        });
+      }, 400);
+    }
+
+    function addToCart(producto) {
+      const comercio = appData.comercios.find(c => c.ID == producto.COMERCIO);
+      const productoConNombre = {
+        ...producto,
+        NOMBRE_COMERCIO: comercio ? comercio.COMERCIO : 'Desconocido'
+      };
+      
+      const existing = appData.cart.find(item => 
+        item.NOMBRE === producto.NOMBRE && item.COMERCIO === producto.COMERCIO
+      );
+      
+      if (existing) {
+        existing.cantidad++;
+      } else {
+        appData.cart.push({...productoConNombre, cantidad: 1});
+      }
+      updateCartUI();
+      
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = '✓ Agregado';
+      btn.classList.add('bg-green-500');
+      btn.classList.remove('bg-brand-orange');
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('bg-green-500');
+        btn.classList.add('bg-brand-orange');
+      }, 1000);
+    }
+
+    function updateCartUI() {
+      const count = appData.cart.reduce((sum, item) => sum + item.cantidad, 0);
+      const cartCountEl = document.getElementById('cartCount');
+      cartCountEl.textContent = count;
+      
+      cartCountEl.classList.add('scale-in');
+      setTimeout(() => cartCountEl.classList.remove('scale-in'), 200);
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartItems');
+      if (appData.cart.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-8">Tu carrito está vacío</p>';
+        document.getElementById('cartTotal').textContent = '0.00';
+        return;
+      }
+
+      container.innerHTML = appData.cart.map((item, index) => `
+        <div class="flex gap-4 py-4 border-b last:border-0 fade-in">
+          <div class="flex-1">
+            <p class="font-bold">${item.NOMBRE || 'Producto'}</p>
+            <p class="text-sm text-gray-600">L.${parseFloat(item.PRECIO || 0).toFixed(2)} c/u</p>
+            ${item.DESCRIPCION ? `<p class="text-xs text-gray-500 mt-1">${item.DESCRIPCION}</p>` : ''}
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="decrease-qty w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold" data-index="${index}">-</button>
+            <span class="font-bold w-8 text-center">${item.cantidad}</span>
+            <button class="increase-qty w-8 h-8 rounded-lg bg-brand-orange text-white hover:bg-orange-600 flex items-center justify-center font-bold" data-index="${index}">+</button>
+            <button class="remove-item text-red-500 hover:text-red-700 ml-2" data-index="${index}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      const total = appData.cart.reduce((sum, item) => sum + (parseFloat(item.PRECIO || 0) * item.cantidad), 0);
+      document.getElementById('cartTotal').textContent = total.toFixed(2);
+
+      document.querySelectorAll('.increase-qty').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = e.target.closest('button').dataset.index;
+          appData.cart[index].cantidad++;
+          renderCart();
+          updateCartUI();
+        });
+      });
+
+      document.querySelectorAll('.decrease-qty').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = e.target.closest('button').dataset.index;
+          if (appData.cart[index].cantidad > 1) {
+            appData.cart[index].cantidad--;
+          } else {
+            appData.cart.splice(index, 1);
+          }
+          renderCart();
+          updateCartUI();
+        });
+      });
+
+      document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = e.target.closest('button').dataset.index;
+          appData.cart.splice(index, 1);
+          renderCart();
+          updateCartUI();
+        });
+      });
+    }
+
+    function actualizarTotalesCheckout() {
+      const subtotal = appData.cart.reduce((sum, item) => sum + (parseFloat(item.PRECIO || 0) * item.cantidad), 0);
+      const propina = parseFloat(document.getElementById('propinaCustom').value) || 0;
+      const total = subtotal + propina;
+      
+      document.getElementById('checkoutSubtotal').textContent = subtotal.toFixed(2);
+      document.getElementById('checkoutPropina').textContent = propina.toFixed(2);
+      document.getElementById('checkoutTotal').textContent = total.toFixed(2);
+      
+      if (propina > 0) {
+        document.getElementById('propinaRow').classList.remove('hidden');
+      } else {
+        document.getElementById('propinaRow').classList.add('hidden');
+      }
+    }
+
+    function setupEventListeners() {
+      document.getElementById('locationBtn').addEventListener('click', () => {
+        obtenerUbicacion();
+      });
+
+      document.getElementById('searchComercio').addEventListener('input', (e) => {
+        appData.searchTermComercio = e.target.value;
+        renderComercios();
+      });
+
+      document.getElementById('sortComercio').addEventListener('change', (e) => {
+        appData.sortComercio = e.target.value;
+        renderComercios();
+      });
+
+      document.getElementById('searchProducto').addEventListener('input', (e) => {
+        appData.searchTermProducto = e.target.value;
+        renderProductos();
+      });
+
+      document.getElementById('sortProducto').addEventListener('change', (e) => {
+        appData.sortProducto = e.target.value;
+        renderProductos();
+      });
+
+      document.getElementById('backToCategorias').addEventListener('click', () => {
+        document.getElementById('comerciosSection').classList.add('hidden');
+        document.getElementById('categoriasSection').classList.remove('hidden');
+        appData.selectedCategoria = null;
+        appData.searchTermComercio = '';
+        appData.sortComercio = 'default';
+        document.getElementById('searchComercio').value = '';
+        document.getElementById('sortComercio').value = 'default';
+      });
+
+      document.getElementById('cartBtn').addEventListener('click', () => {
+        document.getElementById('cartModal').classList.remove('hidden');
+        renderCart();
+      });
+
+      document.getElementById('closeCartBtn').addEventListener('click', () => {
+        document.getElementById('cartModal').classList.add('hidden');
+      });
+
+      document.getElementById('backBtn').addEventListener('click', () => {
+        document.getElementById('productosSection').classList.add('hidden');
+        document.getElementById('comerciosSection').classList.remove('hidden');
+        appData.currentComercio = null;
+        appData.searchTermProducto = '';
+        appData.sortProducto = 'default';
+        document.getElementById('searchProducto').value = '';
+        document.getElementById('sortProducto').value = 'default';
+      });
+
+      document.getElementById('checkoutBtn').addEventListener('click', () => {
+        if (appData.cart.length === 0) {
+          alert('Tu carrito está vacío');
+          return;
+        }
+        document.getElementById('cartModal').classList.add('hidden');
+        document.getElementById('checkoutModal').classList.remove('hidden');
+        
+        actualizarTotalesCheckout();
+        
+        document.getElementById('checkoutForm').reset();
+        document.getElementById('efectivoSection').classList.remove('hidden');
+        document.getElementById('transferenciaSection').classList.add('hidden');
+        document.getElementById('cambioDisplay').classList.add('hidden');
+        document.getElementById('uploadPlaceholder').classList.remove('hidden');
+        document.getElementById('uploadPreview').classList.add('hidden');
+        document.getElementById('propinaRow').classList.add('hidden');
+      });
+      // PERFIL Y CERRAR SESIÓN
+  document.getElementById('profileBtn').addEventListener('click', () => {
+    cargarPerfilUsuario();
+  });
+
+  document.getElementById('closeProfileBtn').addEventListener('click', () => {
+    document.getElementById('profileModal').classList.add('hidden');
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    cerrarSesion();
+  });
+
+  document.getElementById('editProfileBtn').addEventListener('click', () => {
+    alert('Funcionalidad de editar perfil próximamente 🚧');
+  });
+
+      // Pre-llenar datos si hay usuario autenticado
+    if (authData.usuario) {
+      document.getElementById('celular').value = authData.usuario.celular || '';
+      document.getElementById('direccion').value = authData.usuario.direccion || '';
+    }
+
+      document.getElementById('cancelCheckoutBtn').addEventListener('click', () => {
+        document.getElementById('checkoutModal').classList.add('hidden');
+      });
+
+      document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await procesarPedido();
+      });
+
+      document.getElementById('customProductBtn').addEventListener('click', () => {
+        document.getElementById('customProductModal').classList.remove('hidden');
+      });
+
+      document.getElementById('cancelCustomBtn').addEventListener('click', () => {
+        document.getElementById('customProductModal').classList.add('hidden');
+        document.getElementById('customProductForm').reset();
+      });
+
+      document.getElementById('customProductForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('customName').value;
+        const precio = document.getElementById('customPrice').value;
+        
+        addToCart({
+          NOMBRE: nombre,
+          PRECIO: precio,
+          COMERCIO: appData.currentComercio.ID,
+          NOMBRE_COMERCIO: appData.currentComercio.COMERCIO,
+          DESCRIPCION: 'Producto personalizado',
+          IMAGEN: ''
+        });
+
+        document.getElementById('customProductModal').classList.add('hidden');
+        document.getElementById('customProductForm').reset();
+      });
+
+      // NUEVOS EVENT LISTENERS PARA CHECKOUT MEJORADO
+
+      document.querySelectorAll('input[name="metodoPago"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          const efectivoSection = document.getElementById('efectivoSection');
+          const transferenciaSection = document.getElementById('transferenciaSection');
+          
+          if (e.target.value === 'efectivo') {
+            efectivoSection.classList.remove('hidden');
+            transferenciaSection.classList.add('hidden');
+            document.getElementById('comprobanteFile').removeAttribute('required');
+          } else {
+            efectivoSection.classList.add('hidden');
+            transferenciaSection.classList.remove('hidden');
+            document.getElementById('comprobanteFile').setAttribute('required', 'required');
+          }
+        });
+      });
+
+      document.getElementById('montoPago').addEventListener('input', (e) => {
+        const total = appData.cart.reduce((sum, item) => sum + (parseFloat(item.PRECIO || 0) * item.cantidad), 0);
+        const propina = parseFloat(document.getElementById('propinaCustom').value) || 0;
+        const totalConPropina = total + propina;
+        const montoPago = parseFloat(e.target.value) || 0;
+        
+        const cambioDisplay = document.getElementById('cambioDisplay');
+        const cambioMonto = document.getElementById('cambioMonto');
+        
+        if (montoPago > 0) {
+          const cambio = montoPago - totalConPropina;
+          if (cambio >= 0) {
+            cambioMonto.textContent = cambio.toFixed(2);
+            cambioDisplay.classList.remove('hidden');
+            cambioDisplay.classList.remove('bg-red-50', 'border-red-200');
+            cambioDisplay.classList.add('bg-green-50', 'border-green-200');
+            cambioDisplay.querySelector('p').className = 'text-sm text-green-800';
+            cambioDisplay.querySelector('p').innerHTML = '💰 Su cambio será: <span class="font-bold">L.' + cambio.toFixed(2) + '</span>';
+          } else {
+            cambioMonto.textContent = '0.00';
+            cambioDisplay.classList.remove('hidden');
+            cambioDisplay.classList.remove('bg-green-50', 'border-green-200');
+            cambioDisplay.classList.add('bg-red-50', 'border-red-200');
+            cambioDisplay.querySelector('p').className = 'text-sm text-red-800';
+            cambioDisplay.querySelector('p').innerHTML = '⚠️ El monto es insuficiente (faltan L.' + Math.abs(cambio).toFixed(2) + ')';
+          }
+        } else {
+          cambioDisplay.classList.add('hidden');
+        }
+      });
+
+      document.getElementById('uploadArea').addEventListener('click', () => {
+        document.getElementById('comprobanteFile').click();
+      });
+
+      document.getElementById('comprobanteFile').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) {
+            alert('⚠️ La imagen es muy grande. Máximo 5MB.');
+            e.target.value = '';
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            document.getElementById('previewImg').src = event.target.result;
+            document.getElementById('uploadPlaceholder').classList.add('hidden');
+            document.getElementById('uploadPreview').classList.remove('hidden');
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      document.getElementById('removeComprobante').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('comprobanteFile').value = '';
+        document.getElementById('uploadPlaceholder').classList.remove('hidden');
+        document.getElementById('uploadPreview').classList.add('hidden');
+      });
+
+      document.querySelectorAll('.propina-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const propina = parseFloat(e.target.dataset.propina);
+          document.getElementById('propinaCustom').value = propina;
+          
+          document.querySelectorAll('.propina-btn').forEach(b => {
+            b.classList.remove('border-brand-orange', 'bg-orange-50');
+            b.classList.add('border-gray-200');
+          });
+          e.target.classList.add('border-brand-orange', 'bg-orange-50');
+          
+          actualizarTotalesCheckout();
+        });
+      });
+
+      document.getElementById('propinaCustom').addEventListener('input', () => {
+        document.querySelectorAll('.propina-btn').forEach(b => {
+          b.classList.remove('border-brand-orange', 'bg-orange-50');
+          b.classList.add('border-gray-200');
+        });
+        actualizarTotalesCheckout();
+      });
+
+
+      // AUTH EVENT LISTENERS
+  document.getElementById('authPhoneForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    enviarCodigoVerificacion(document.getElementById('authPhone').value);
+  });
+
+  document.getElementById('authCodeForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const codigo = document.getElementById('authCode').value;
+    if (codigo.length === 6) verificarCodigoIngresado(codigo);
+    else alert('El código debe tener 6 dígitos');
+  });
+
+  document.getElementById('authRegisterForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    completarRegistroUsuario(
+      document.getElementById('authNombre').value,
+      document.getElementById('authDireccion').value
+    );
+  });
+
+  document.getElementById('resendCodeBtn').addEventListener('click', () => {
+    enviarCodigoVerificacion(authData.numeroTemporal);
+  });
+
+  document.getElementById('authCode').addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+  });
+
+
+    }
+
+    async function procesarPedido() {
+      const celular = document.getElementById('celular').value;
+      const direccion = document.getElementById('direccion').value;
+      const metodoPago = document.querySelector('input[name="metodoPago"]:checked').value;
+      const notasEspeciales = document.getElementById('notasEspeciales').value;
+      const propina = parseFloat(document.getElementById('propinaCustom').value) || 0;
+
+      if (!appData.userLocation) {
+        alert('Por favor espera mientras obtenemos tu ubicación');
+        obtenerUbicacion();
+        return;
+      }
+
+      const subtotal = appData.cart.reduce((sum, item) => sum + (parseFloat(item.PRECIO || 0) * item.cantidad), 0);
+      const total = subtotal + propina;
+
+      let montoPago = null;
+      let cambio = null;
+      let comprobanteUrl = null;
+
+      const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
+      const originalText = submitBtn.textContent;
+
+      if (metodoPago === 'efectivo') {
+        const montoInput = document.getElementById('montoPago').value;
+        if (montoInput && parseFloat(montoInput) > 0) {
+          montoPago = parseFloat(montoInput);
+          cambio = montoPago - total;
+          
+          if (cambio < 0) {
+            alert('⚠️ El monto con el que pagarás es insuficiente.');
+            return;
+          }
+        }
+      } else if (metodoPago === 'transferencia') {
+        const comprobanteFile = document.getElementById('comprobanteFile').files[0];
+        if (!comprobanteFile) {
+          alert('⚠️ Por favor sube el comprobante de transferencia.');
+          return;
+        }
+        
+        // SUBIR IMAGEN A CLOUDINARY
+        submitBtn.textContent = 'Subiendo comprobante...';
+        submitBtn.disabled = true;
+
+        try {
+          console.log('📤 Subiendo comprobante a Cloudinary...');
+          
+          const formData = new FormData();
+          formData.append('file', comprobanteFile);
+          formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+          formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
+          formData.append('folder', 'TRANSFERENCIAS');
+          
+          const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+          });
+          
+          const cloudinaryData = await cloudinaryResponse.json();
+          
+          if (cloudinaryData.secure_url) {
+            comprobanteUrl = cloudinaryData.secure_url;
+            console.log('✅ Comprobante subido:', comprobanteUrl);
+          } else {
+            throw new Error('Error al subir comprobante');
+          }
+        } catch (error) {
+          console.error('Error subiendo comprobante:', error);
+          alert('⚠️ Error al subir el comprobante. Por favor intenta nuevamente.');
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
+          return;
+        }
+      }
+
+      const datos = {
+        idUsuario: authData.usuario ? authData.usuario.id : null,
+        celular,
+        direccion,
+        ubicacionGPS: appData.userLocation,
+        items: appData.cart.map(item => ({
+          nombre: item.NOMBRE || 'Producto',
+          precio: parseFloat(item.PRECIO || 0),
+          cantidad: item.cantidad,
+          descripcion: item.DESCRIPCION || ''
+        })),
+        subtotal,
+        propina,
+        total,
+        comercio: appData.currentComercio.COMERCIO,
+        whatsappComercio: appData.currentComercio.WHATSAPP || appData.currentComercio['NUMERO COMERCIO'],
+        metodoPago,
+        montoPago,
+        cambio,
+        notasEspeciales,
+        comprobanteUrl
+      };
+
+      submitBtn.textContent = 'Procesando...';
+      submitBtn.disabled = true;
+
+      try {
+        const result = { success: true, idPedido: Date.now() };
+        
+        fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'registrarPedido', datos: datos })
+        }).catch(err => console.warn('Error registro Sheets:', err));
+        
+        await finalizarPedido(result, datos);
+        
+      } catch (error) {
+        console.error('Error:', error);
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+        alert('⚠️ Ocurrió un error al procesar el pedido. Por favor intenta nuevamente.');
+      }
+    }
+
+    async function finalizarPedido(result, datos) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#FF8C00', '#FF6B00', '#FFD700', '#FFA500']
+      });
+      
+      setTimeout(() => confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#FF8C00', '#FF6B00', '#FFD700'] }), 250);
+      setTimeout(() => confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#FF8C00', '#FF6B00', '#FFD700'] }), 400);
+
+      const itemsTexto = datos.items.map(item => 
+        `• ${item.cantidad}x ${item.nombre} - L.${(item.precio * item.cantidad).toFixed(2)}`
+      ).join('\n');
+
+      let mensajeCompleto = 
+        `🛵 *CONFIRMACIÓN DE PEDIDO SOMAR EXPRESS*\n\n` +
+        `*Pedido #${result.idPedido}*\n` +
+        `*Comercio:* ${datos.comercio}\n\n` +
+        `📦 *TUS PRODUCTOS:*\n${itemsTexto}\n\n` +
+        `💵 *DESGLOSE:*\n` +
+        `Subtotal: L.${datos.subtotal.toFixed(2)}\n`;
+
+      if (datos.propina > 0) {
+        mensajeCompleto += `Propina: L.${datos.propina.toFixed(2)}\n`;
+      }
+
+      mensajeCompleto += `*TOTAL: L.${datos.total.toFixed(2)}*\n\n`;
+
+      mensajeCompleto += `💳 *MÉTODO DE PAGO:* ${datos.metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia'}\n`;
+      
+      if (datos.metodoPago === 'efectivo' && datos.montoPago) {
+        mensajeCompleto += `Pagarás con: L.${datos.montoPago.toFixed(2)}\n`;
+        mensajeCompleto += `Tu cambio: L.${datos.cambio.toFixed(2)}\n`;
+      } else if (datos.metodoPago === 'transferencia') {
+        mensajeCompleto += `✅ Comprobante de pago adjunto\n`;
+      }
+
+      mensajeCompleto += `\n📍 *DIRECCIÓN DE ENTREGA:*\n${datos.direccion}\n`;
+
+      if (datos.notasEspeciales) {
+        mensajeCompleto += `\n📝 *NOTAS ESPECIALES:*\n${datos.notasEspeciales}\n`;
+      }
+
+      mensajeCompleto += 
+        `\n✅ *Tu pedido ha sido recibido y será procesado en breve.*\n\n` +
+        `_Gracias por usar Somar Express_ 🚀`;
+
+      let numeroCliente = datos.celular.toString().replace(/[^0-9]/g, '');
+      
+      if (numeroCliente && numeroCliente.length >= 8) {
+        if (!numeroCliente.startsWith('504') && numeroCliente.length === 8) {
+          numeroCliente = '504' + numeroCliente;
+        }
+
+        try {
+          console.log('📤 Enviando confirmación al cliente:', numeroCliente);
+          
+          // Determinar qué imagen enviar
+          let imagenWhatsApp = 'https://res.cloudinary.com/drkaxsziu/image/upload/v1767871213/Somar_Express_2048_x_2048_px_18_x_18_in__20250623_221102_0000_o0bv7a.png';
+          
+          if (datos.comprobanteUrl) {
+            imagenWhatsApp = datos.comprobanteUrl;
+            console.log('📷 Enviando comprobante:', imagenWhatsApp);
+          }
+          
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'enviarWhatsApp',
+              numero: numeroCliente,
+              mensaje: mensajeCompleto,
+              imagenUrl: imagenWhatsApp
+            })
+          }).catch(err => console.warn('Error envío WhatsApp:', err));
+
+          console.log('✅ Solicitud enviada');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          alert('✅ ¡Pedido confirmado!\n\nRecibirás un mensaje de confirmación en WhatsApp.');
+          
+        } catch (error) {
+          console.error('❌ Error:', error);
+          alert('✅ ¡Pedido registrado exitosamente!\n\nPronto recibirás confirmación del comercio.');
+        }
+      } else {
+        alert('✅ ¡Pedido registrado exitosamente!');
+      }
+
+      appData.cart = [];
+      updateCartUI();
+      document.getElementById('checkoutModal').classList.add('hidden');
+      document.getElementById('checkoutForm').reset();
+      
+      const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
+      submitBtn.textContent = 'Confirmar Pedido';
+      submitBtn.disabled = false;
+    }
+  </script>
+
+
+<!-- Modal AUTH: Login/Registro -->
+  <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full scale-in">
+      <div class="p-6">
+        <!-- PASO 1: Ingresar Número -->
+        <div id="authStep1">
+          <div class="text-center mb-6">
+            <img src="https://res.cloudinary.com/drkaxsziu/image/upload/v1767871213/Somar_Express_2048_x_2048_px_18_x_18_in__20250623_221102_0000_o0bv7a.png" alt="Somar Express" class="w-24 h-24 mx-auto mb-4">
+            <h2 class="text-2xl font-bold mb-2">Bienvenido a Somar Express</h2>
+            <p class="text-gray-600">Ingresa tu número de celular para continuar</p>
+          </div>
+          <form id="authPhoneForm">
+            <div class="mb-4">
+              <label class="block font-semibold mb-2 text-sm text-gray-700">Número de Celular</label>
+              <input type="tel" id="authPhone" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" placeholder="+504 9999-9999">
+              <p class="text-xs text-gray-500 mt-1">Te enviaremos un código de verificación por WhatsApp</p>
+            </div>
+            <button type="submit" class="w-full bg-brand-orange text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg">Continuar</button>
+          </form>
+        </div>
+        <!-- PASO 2: Verificar Código -->
+        <div id="authStep2" class="hidden">
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Código Enviado</h2>
+            <p class="text-gray-600">Revisa tu WhatsApp e ingresa el código de 6 dígitos</p>
+            <p class="text-sm text-gray-500 mt-2">Enviado a <span id="phoneDisplay" class="font-semibold"></span></p>
+          </div>
+          <form id="authCodeForm">
+            <div class="mb-4">
+              <label class="block font-semibold mb-2 text-sm text-gray-700 text-center">Código de Verificación</label>
+              <input type="text" id="authCode" required maxlength="6" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-center text-2xl font-bold tracking-widest focus:border-brand-orange focus:outline-none transition" placeholder="000000">
+            </div>
+            <button type="submit" class="w-full bg-brand-orange text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg mb-3">Verificar Código</button>
+            <button type="button" id="resendCodeBtn" class="w-full text-brand-orange font-semibold hover:underline">Reenviar código</button>
+          </form>
+        </div>
+        <!-- PASO 3: Completar Registro -->
+        <div id="authStep3" class="hidden">
+          <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold mb-2">Completa tu Perfil</h2>
+            <p class="text-gray-600">Necesitamos algunos datos para mejorar tu experiencia</p>
+          </div>
+          <form id="authRegisterForm">
+            <div class="mb-4">
+              <label class="block font-semibold mb-2 text-sm text-gray-700">Nombre Completo *</label>
+              <input type="text" id="authNombre" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" placeholder="Ej: Juan Pérez">
+            </div>
+            <div class="mb-4">
+              <label class="block font-semibold mb-2 text-sm text-gray-700">Dirección Principal *</label>
+              <textarea id="authDireccion" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-brand-orange focus:outline-none transition" rows="2" placeholder="Colonia, calle, referencias..."></textarea>
+            </div>
+            <button type="submit" class="w-full bg-brand-orange text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg">Completar Registro</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal PERFIL DE USUARIO -->
+<div id="profileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full scale-in">
+    <div class="p-6">
+      <!-- Header del Modal -->
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Mi Perfil</h2>
+        <button id="closeProfileBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Información del Usuario -->
+      <div class="mb-6">
+        <div class="flex items-center gap-4 mb-4 p-4 bg-orange-50 rounded-xl">
+          <div class="w-16 h-16 bg-brand-orange rounded-full flex items-center justify-center text-white text-2xl font-bold">
+            <span id="profileInitial">U</span>
+          </div>
+          <div class="flex-1">
+            <p class="font-bold text-lg" id="profileNombre">Cargando...</p>
+            <p class="text-sm text-gray-600" id="profileCelular">+504 ----</p>
+          </div>
+        </div>
+        
+        <div class="space-y-3">
+          <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+            <svg class="w-5 h-5 text-gray-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 mb-1">Dirección Principal</p>
+              <p class="text-sm font-semibold" id="profileDireccion">Cargando...</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 mb-1">Miembro desde</p>
+              <p class="text-sm font-semibold" id="profileFecha">Cargando...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Botones de Acción -->
+      <div class="space-y-3">
+        <button id="editProfileBtn" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+          Editar Perfil
+        </button>
+        
+        <button id="logoutBtn" class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -7,7 +7,7 @@
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
@@ -24,43 +24,150 @@
         /* MAPA */
         #map { flex: 1; width: 100%; z-index: 0; }
         
-        /* TARJETA DE RESUMEN DIARIO */
+        /* ✨ MEJORA 1: RESUMEN DIARIO MEJORADO */
         #dailySummary {
-            position: absolute; top: 70px; left: 10px; background: rgba(0, 0, 0, 0.8);
-            padding: 10px; border-radius: 10px; border: 1px solid #333; z-index: 900;
-            font-size: 0.85rem; color: #ddd; pointer-events: none;
+            position: absolute; top: 70px; left: 10px; 
+            background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 0, 0, 0.9));
+            padding: 15px; border-radius: 12px; border: 1px solid #00e676; 
+            z-index: 900; min-width: 180px;
+            box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
         }
-        #dailySummary strong { color: white; font-size: 1rem; display: block; margin-bottom: 2px; }
+        #dailySummary .summary-title { 
+            color: #00e676; font-size: 0.75rem; font-weight: 700; 
+            letter-spacing: 1px; margin-bottom: 8px; 
+        }
+        #dailySummary .stat-row { 
+            display: flex; align-items: center; gap: 8px; 
+            margin-bottom: 5px; font-size: 0.85rem; 
+        }
+        #dailySummary .stat-icon { font-size: 1rem; }
+        #dailySummary .stat-value { font-weight: 600; color: white; }
+        #dailySummary .earnings-big { 
+            font-size: 1.4rem; color: #00e676; font-weight: 700; 
+            margin: 8px 0; text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+        }
+        #dailySummary .stat-small { 
+            color: #94a3b8; font-size: 0.75rem; 
+        }
+
+        /* ✨ MEJORA 6: INDICADOR DE ZONA ACTUAL */
+        #currentZone {
+            position: absolute; top: 70px; right: 10px; 
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px 15px; border-radius: 20px; 
+            border: 1px solid #2979ff; z-index: 900;
+            display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 10px rgba(41, 121, 255, 0.3);
+        }
+        #currentZone .zone-icon { font-size: 1.2rem; }
+        #currentZone .zone-name { 
+            font-size: 0.9rem; font-weight: 600; color: #2979ff; 
+        }
 
         /* BOTONES FLOTANTES */
-        .btn-float { position: absolute; top: 70px; right: 10px; background: #222; color: white; padding: 10px 15px; border-radius: 25px; border: 1px solid #444; font-weight: bold; cursor: pointer; z-index: 900; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .bottom-bar { position: absolute; top: 125px; right: 10px; width: auto; padding: 0; background: transparent; border: none; z-index: 1001; }
+        .btn-float { position: absolute; top: 135px; right: 10px; background: #222; color: white; padding: 10px 15px; border-radius: 25px; border: 1px solid #444; font-weight: bold; cursor: pointer; z-index: 900; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .bottom-bar { position: absolute; top: 190px; right: 10px; width: auto; padding: 0; background: transparent; border: none; z-index: 1001; }
         .btn-status { width: auto; padding: 10px 20px; font-size: 0.9rem; font-weight: bold; border-radius: 25px; border: 1px solid #444; cursor: pointer; transition: 0.3s; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .offline { background: #333; color: #aaa; } 
         .online { background: #00e676; color: black; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4); border-color: #00e676; }
 
         /* PANEL DE VIAJE ACTIVO */
-        #activeTripPanel { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
+        #activeTripPanel { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); max-height: 60vh; overflow-y: auto; }
         .trip-info-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+        
+        /* ✨ MEJORA 4: DESGLOSE FINANCIERO */
+        .trip-financial-breakdown {
+            background: #2a2a2a; padding: 15px; border-radius: 10px; 
+            margin-bottom: 15px; border: 1px solid #333;
+        }
+        .financial-row {
+            display: flex; justify-content: space-between; 
+            padding: 8px 0; border-bottom: 1px solid #333;
+        }
+        .financial-row:last-child { border-bottom: none; }
+        .financial-label { color: #94a3b8; font-size: 0.9rem; }
+        .financial-value { font-weight: 600; color: white; }
+        .financial-total { 
+            background: #00e676; color: black; 
+            padding: 10px; border-radius: 8px; margin-top: 10px;
+            display: flex; justify-content: space-between;
+            font-weight: 700; font-size: 1.1rem;
+        }
+        
         .trip-details { background: #2a2a2a; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; }
         .trip-row { display: flex; margin-bottom: 8px; } .trip-icon { width: 20px; margin-right: 10px; text-align: center; }
         .btn-action { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
         .btn-primary { background: #2979ff; color: white; } .btn-finish { background: #00e676; color: black; }
         .btn-nav { background: #333; color: white; border: 1px solid #555; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-right: 5px; }
+        
+        /* ✨ MEJORA 3: MENSAJES PREDEFINIDOS */
+        .quick-messages {
+            background: #2a2a2a; padding: 12px; border-radius: 10px;
+            margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .quick-msg-btn {
+            background: #374151; color: white; border: 1px solid #4b5563;
+            padding: 8px 12px; border-radius: 8px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600;
+            transition: all 0.2s;
+        }
+        .quick-msg-btn:active {
+            background: #2979ff; border-color: #2979ff;
+            transform: scale(0.95);
+        }
+        
         .btn-contact { background: #444; color: white; border: 1px solid #666; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
         #badgeChat { background: red; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; display: none; margin-left: 5px; }
 
         /* MODALES */
         .modal-fs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 3000; padding: 20px; overflow-y: auto; display: none; flex-direction: column; }
         .modal-header { display: flex; align-items: center; margin-bottom: 20px; } .back-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; margin-right: 10px; }
-        .history-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
+        
+        /* ✨ MEJORA 2: HISTORIAL DE VIAJES MEJORADO */
+        .history-card { 
+            background: #1a1a1a; padding: 15px; border-radius: 12px; 
+            margin-bottom: 10px; border: 1px solid #333;
+            transition: all 0.2s;
+        }
+        .history-card:active { background: #2a2a2a; }
+        .history-header {
+            display: flex; justify-content: space-between; 
+            margin-bottom: 10px; padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .history-date { color: #888; font-size: 0.85rem; }
+        .history-price { 
+            color: #00e676; font-weight: 700; font-size: 1.1rem; 
+        }
+        .history-details {
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .history-row {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.85rem; color: #cbd5e1;
+        }
+        .history-icon { font-size: 1rem; }
+        .history-breakdown {
+            background: #2a2a2a; padding: 8px; border-radius: 6px;
+            margin-top: 8px; font-size: 0.8rem;
+        }
+        .breakdown-row {
+            display: flex; justify-content: space-between;
+            padding: 4px 0; color: #94a3b8;
+        }
+        .breakdown-row.total {
+            color: #00e676; font-weight: 600;
+            border-top: 1px solid #333; padding-top: 6px;
+            margin-top: 4px;
+        }
+        
         .earnings-box { background: linear-gradient(135deg, #1e1e1e, #111); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; margin-bottom: 20px; }
         
         input { width: 100%; padding: 14px; background: #222; border: 1px solid #444; border-radius: 10px; margin-bottom: 15px; color: white; box-sizing: border-box; font-size: 1rem; } label { color: #888; font-size: 0.9rem; margin-bottom: 5px; display: block; }
         .btn-save { width: 100%; padding: 15px; background: #00e676; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
         .btn-logout { width: 100%; padding: 15px; background: #b91c1c; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 30px; }
 
-        /* === NUEVOS ESTILOS PARA OFERTA DESLIZABLE === */
+        /* === ESTILOS PARA OFERTA DESLIZABLE === */
         #modalTrip { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
         #previewMap { width: 100%; max-width: 350px; height: 220px; border-radius: 15px; margin: 15px 0; border: 2px solid #333; }
         
@@ -86,7 +193,7 @@
         /* Slider Rechazar */
         .slider-reject { background: #450a0a; border: 1px solid #7f1d1d; }
         .slider-reject .slider-text { color: #fca5a5; font-weight: bold; font-size: 0.9rem; z-index: 1; }
-        .slider-reject .slider-btn { background: #ef4444; color: white; right: 4px; } /* Empieza a la derecha para deslizar izq */
+        .slider-reject .slider-btn { background: #ef4444; color: white; right: 4px; }
 
         /* Botón Arrastrable */
         .slider-btn {
@@ -105,6 +212,16 @@
         .bubble-other { align-self: flex-start; background: #222; color: #ddd; border-bottom-left-radius: 2px; border: 1px solid #444; }
 
         .leaflet-routing-container { display: none !important; }
+        
+        /* ✨ MEJORA 5: VIBRACIÓN VISUAL */
+        @keyframes vibrate {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .vibrating {
+            animation: vibrate 0.3s ease-in-out 3;
+        }
     </style>
 </head>
 <body>
@@ -116,10 +233,24 @@
         <button class="btn-small" onclick="abrirModalRecarga()">+ Saldo</button>
     </div>
 
+    <!-- ✨ MEJORA 1: RESUMEN DIARIO MEJORADO -->
     <div id="dailySummary">
-        <div style="color:#aaa">Hoy</div>
-        <div id="todayTrips">Viajes: 0</div>
-        <div id="todayEarnings" style="color:#00e676; font-weight:bold">Ganado: L. 0</div>
+        <div class="summary-title">📊 RESUMEN HOY</div>
+        <div class="stat-row">
+            <span class="stat-icon">🚗</span>
+            <span id="todayTrips" class="stat-value">0 viajes</span>
+        </div>
+        <div class="earnings-big" id="todayEarnings">L. 0.00</div>
+        <div class="stat-small">
+            <span id="todayHours">⏱️ 0h activo</span> • 
+            <span id="todayAverage">~L.0 /viaje</span>
+        </div>
+    </div>
+
+    <!-- ✨ MEJORA 6: INDICADOR DE ZONA ACTUAL -->
+    <div id="currentZone">
+        <span class="zone-icon">📍</span>
+        <span class="zone-name" id="zoneName">Detectando...</span>
     </div>
 
     <div id="map"></div>
@@ -133,16 +264,41 @@
         <div class="trip-info-header">
             <div>
                 <h3 id="tripStepTitle" style="margin:0; color:#fff">Recogiendo...</h3>
-                <div style="display:flex; align-items:center; gap:10px">
+                <div style="display:flex; align-items:center; gap:10px; margin-top:5px">
                     <div id="tripPrice" style="font-size:1.4rem; font-weight:bold; color:#00e676">L. --</div>
                     <span id="tripStats" style="color:#aaa; font-size:0.9rem">-- km • -- min</span>
                 </div>
             </div>
             <div style="display:flex; gap:5px">
                 <button class="btn-contact" onclick="abrirChat()">💬 Chat <span id="badgeChat">!</span></button>
-                <button class="btn-nav" onclick="abrirWaze()">🗺️ Mapa</button>
+                <button class="btn-nav" onclick="abrirWaze()">🗺️</button>
             </div>
         </div>
+        
+        <!-- ✨ MEJORA 4: DESGLOSE FINANCIERO -->
+        <div class="trip-financial-breakdown">
+            <div class="financial-row">
+                <span class="financial-label">💵 Tarifa del viaje</span>
+                <span class="financial-value" id="tripFullPrice">L. --</span>
+            </div>
+            <div class="financial-row">
+                <span class="financial-label">⚙️ Comisión (10%)</span>
+                <span class="financial-value" id="tripCommission">- L. --</span>
+            </div>
+            <div class="financial-total">
+                <span>Tu Ganancia Neta:</span>
+                <span id="tripNetEarnings">L. --</span>
+            </div>
+        </div>
+
+        <!-- ✨ MEJORA 3: MENSAJES PREDEFINIDOS -->
+        <div class="quick-messages">
+            <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya voy en camino 🚗')">Ya voy 🚗</button>
+            <button class="quick-msg-btn" onclick="enviarMensajeRapido('Llego en 5 minutos ⏱️')">5 min ⏱️</button>
+            <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya llegué, estoy esperando 📍')">Llegué 📍</button>
+            <button class="quick-msg-btn" onclick="enviarMensajeRapido('¿Dónde te encuentras? 📱')">¿Dónde? 📱</button>
+        </div>
+        
         <div class="trip-details">
             <div style="color:#aaa; font-size:0.8rem; margin-bottom:5px">Cliente: <span id="lblClientName" style="color:white; font-weight:bold">--</span></div>
             <div class="trip-row"><div class="trip-icon">🔵</div><div id="txtOrigen" style="color:#ddd">--</div></div>
@@ -166,7 +322,7 @@
         <div class="slider-wrapper">
             <div class="slider-container slider-accept" id="slideAccept">
                 <span class="slider-text">Desliza para ACEPTAR ➔</span>
-                <div class="slider-btn">🚲</div>
+                <div class="slider-btn">🏍️</div>
             </div>
 
             <div class="slider-container slider-reject" id="slideReject">
@@ -188,7 +344,19 @@
         </div>
     </div>
 
-    <div id="historyPanel" class="modal-fs"><div class="modal-header"><button class="back-btn" onclick="document.getElementById('historyPanel').style.display='none'">⬅️</button><h2 style="margin:0; color:white">Ganancias</h2></div><div class="earnings-box"><span style="color:#888; font-size:0.9rem">Total Acumulado</span><div id="totalEarnings" style="font-size: 2rem; color:#00e676">L. 0</div></div><div id="historyList"></div></div>
+    <!-- ✨ MEJORA 2: HISTORIAL CON DESGLOSE -->
+    <div id="historyPanel" class="modal-fs">
+        <div class="modal-header">
+            <button class="back-btn" onclick="document.getElementById('historyPanel').style.display='none'">⬅️</button>
+            <h2 style="margin:0; color:white">💰 Ganancias</h2>
+        </div>
+        <div class="earnings-box">
+            <span style="color:#888; font-size:0.9rem">Total Acumulado</span>
+            <div id="totalEarnings" style="font-size: 2rem; color:#00e676">L. 0</div>
+        </div>
+        <div id="historyList"></div>
+    </div>
+    
     <div id="profilePanel" class="modal-fs"><div class="modal-header"><button class="back-btn" onclick="document.getElementById('profilePanel').style.display='none'">⬅️</button><h2 style="margin:0; color:white">Perfil</h2></div><label>Nombre</label><input id="pName"><label>Teléfono</label><input id="pPhone"><label>Moto</label><input id="pMoto"><label>Placa</label><input id="pPlate"><label>Email</label><input id="pEmail" readonly style="background:#333; color:#888"><button class="btn-save" onclick="guardarPerfil()">GUARDAR</button><button class="btn-logout" onclick="cerrarSesion()">SALIR</button></div>
     
     <div id="chatModal" class="chat-modal">
@@ -203,208 +371,5 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script src="slider-fix.js"></script>
-
-    <script>
-        async function calcularResumenDiario() {
-            if(!window.supabaseClient || !conductorId) return;
-            const hoy = new Date().toISOString().split('T')[0];
-            const { data } = await window.supabaseClient.from('carreras').select('precio').eq('conductor_id', conductorId).eq('estado', 'completada').gte('fecha_solicitud', hoy + 'T00:00:00').lte('fecha_solicitud', hoy + 'T23:59:59');
-            let totalHoy = 0; let viajesHoy = 0;
-            if(data) { viajesHoy = data.length; data.forEach(c => totalHoy += parseFloat(c.precio)); }
-            document.getElementById('todayTrips').innerText = `Viajes: ${viajesHoy}`;
-            document.getElementById('todayEarnings').innerText = `Ganado: L. ${totalHoy}`;
-        }
-        setInterval(calcularResumenDiario, 15000); 
-
-// ============================================
-// SLIDERS DE ACEPTAR/RECHAZAR - INTEGRACIÓN COMPLETA
-// ============================================
-
-function initSliders() {
-    const sliderAccept = document.getElementById('slideAccept');
-    const sliderReject = document.getElementById('slideReject');
-    
-    if (!sliderAccept || !sliderReject) {
-        console.warn('❌ Sliders no encontrados en el DOM');
-        return;
-    }
-    
-    const btnAccept = sliderAccept.querySelector('.slider-btn');
-    const btnReject = sliderReject.querySelector('.slider-btn');
-    
-    let isDraggingAccept = false;
-    let isDraggingReject = false;
-    let startX = 0;
-    let currentX = 0;
-    
-    // ============================================
-    // SLIDER ACEPTAR (izquierda a derecha)
-    // ============================================
-    function handleStartAccept(e) {
-        isDraggingAccept = true;
-        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-        btnAccept.style.cursor = 'grabbing';
-        e.preventDefault();
-    }
-    
-    function handleMoveAccept(e) {
-        if (!isDraggingAccept) return;
-        
-        currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-        const deltaX = currentX - startX;
-        const maxDistance = sliderAccept.offsetWidth - btnAccept.offsetWidth - 8;
-        const newPos = Math.min(Math.max(0, deltaX), maxDistance);
-        
-        btnAccept.style.left = (4 + newPos) + 'px';
-        
-        // Si llega al final (>80% del recorrido)
-        if (newPos > maxDistance * 0.8) {
-            isDraggingAccept = false;
-            btnAccept.style.cursor = 'grab';
-            btnAccept.style.left = '4px'; // Reset
-            aceptarDesdeSlider();
-        }
-        
-        e.preventDefault();
-    }
-    
-    function handleEndAccept() {
-        if (!isDraggingAccept) return;
-        isDraggingAccept = false;
-        btnAccept.style.cursor = 'grab';
-        // Regresar al inicio si no completó el desliz
-        btnAccept.style.left = '4px';
-    }
-    
-    // ============================================
-    // SLIDER RECHAZAR (derecha a izquierda)
-    // ============================================
-    function handleStartReject(e) {
-        isDraggingReject = true;
-        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-        btnReject.style.cursor = 'grabbing';
-        e.preventDefault();
-    }
-    
-    function handleMoveReject(e) {
-        if (!isDraggingReject) return;
-        
-        currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-        const deltaX = startX - currentX; // Invertido: derecha a izquierda
-        const maxDistance = sliderReject.offsetWidth - btnReject.offsetWidth - 8;
-        const newPos = Math.min(Math.max(0, deltaX), maxDistance);
-        
-        btnReject.style.right = (4 + newPos) + 'px';
-        
-        // Si llega al final (>80% del recorrido)
-        if (newPos > maxDistance * 0.8) {
-            isDraggingReject = false;
-            btnReject.style.cursor = 'grab';
-            btnReject.style.right = '4px'; // Reset
-            rechazarDesdeSlider();
-        }
-        
-        e.preventDefault();
-    }
-    
-    function handleEndReject() {
-        if (!isDraggingReject) return;
-        isDraggingReject = false;
-        btnReject.style.cursor = 'grab';
-        // Regresar al inicio si no completó el desliz
-        btnReject.style.right = '4px';
-    }
-    
-    // Event listeners para ACEPTAR
-    btnAccept.addEventListener('mousedown', handleStartAccept);
-    btnAccept.addEventListener('touchstart', handleStartAccept, { passive: false });
-    
-    document.addEventListener('mousemove', handleMoveAccept);
-    document.addEventListener('touchmove', handleMoveAccept, { passive: false });
-    
-    document.addEventListener('mouseup', handleEndAccept);
-    document.addEventListener('touchend', handleEndAccept);
-    
-    // Event listeners para RECHAZAR
-    btnReject.addEventListener('mousedown', handleStartReject);
-    btnReject.addEventListener('touchstart', handleStartReject, { passive: false });
-    
-    document.addEventListener('mousemove', handleMoveReject);
-    document.addEventListener('touchmove', handleMoveReject, { passive: false });
-    
-    document.addEventListener('mouseup', handleEndReject);
-    document.addEventListener('touchend', handleEndReject);
-    
-    console.log('✅ Sliders inicializados correctamente');
-}
-
-// ============================================
-// FUNCIONES DE CALLBACK
-// ============================================
-function aceptarDesdeSlider() {
-    console.log('🚀 Slider ACEPTAR completado');
-    
-    // Llamar a la función aceptarViaje() de app.js
-    if (typeof aceptarViaje === 'function') {
-        aceptarViaje();
-    } else {
-        console.error('❌ Función aceptarViaje no encontrada en app.js');
-    }
-}
-
-function rechazarDesdeSlider() {
-    console.log('❌ Slider RECHAZAR completado');
-    
-    // Llamar a la función rechazarViaje() de app.js
-    if (typeof rechazarViaje === 'function') {
-        rechazarViaje();
-    } else {
-        console.error('❌ Función rechazarViaje no encontrada en app.js');
-    }
-}
-
-// ============================================
-// AUTO-INICIALIZACIÓN
-// ============================================
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSliders);
-} else {
-    // DOM ya está listo, inicializar inmediatamente
-    initSliders();
-}
-
-console.log('📱 Código de sliders cargado');
-
-function aceptarDesdeSlider() {
-    console.log('🚀 Slider ACEPTAR completado');
-    // Esta función debe llamar a la función aceptarViaje() de app.js
-    if (typeof aceptarViaje === 'function') {
-        aceptarViaje();
-    } else {
-        console.error('❌ Función aceptarViaje no encontrada en app.js');
-    }
-}
-
-function rechazarDesdeSlider() {
-    console.log('❌ Slider RECHAZAR completado');
-    // Esta función debe llamar a la función rechazarViaje() de app.js
-    if (typeof rechazarViaje === 'function') {
-        rechazarViaje();
-    } else {
-        console.error('❌ Función rechazarViaje no encontrada en app.js');
-    }
-}
-
-// Inicializar sliders cuando el DOM esté listo
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSliders);
-} else {
-    // DOM ya está listo, inicializar inmediatamente
-    initSliders();
-}
-
-console.log('📱 Código de sliders cargado');
-
-    </script>
 </body>
 </html>

@@ -7,6 +7,8 @@ let myPosition = null;
 let previewMap = null; 
 let miSaldo = 0;
 let countdownInterval = null; // Variable global para el temporizador
+let sessionStartTime = null; // Para calcular horas activas
+let currentZoneName = "Detectando..."; // Zona actual del conductor
 
 // === INICIO APP ===
 window.addEventListener('load', async () => {
@@ -239,15 +241,43 @@ async function toggleStatus() {
 }
 
 function iniciarGPS() {
+    // ✨ Iniciar contador de tiempo
+    if (!sessionStartTime) {
+        sessionStartTime = new Date();
+    }
+    
     if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(async (pos) => {
             const { latitude, longitude } = pos.coords;
             myPosition = { lat: latitude, lng: longitude };
-            if (!marker) marker = L.marker([latitude, longitude]).addTo(map); else marker.setLatLng([latitude, longitude]);
-            map.setView([latitude, longitude], 16); 
-            let estado = (!isOnline)?'inactivo':(currentTrip && currentTrip.estado!=='buscando'?'ocupado':'disponible');
-            await window.supabaseClient.from('conductores').update({ latitud: latitude, longitud: longitude, estado: estado }).eq('id', conductorId);
+            
+            if (!marker) {
+                marker = L.marker([latitude, longitude]).addTo(map);
+            } else {
+                marker.setLatLng([latitude, longitude]);
+            }
+            
+            map.setView([latitude, longitude], 16);
+            
+            // ✨ MEJORA 6: Detectar zona actual
+            await detectarZonaActual(latitude, longitude);
+            
+            let estado = (!isOnline) ? 'inactivo' : 
+                        (currentTrip && currentTrip.estado !== 'buscando' ? 'ocupado' : 'disponible');
+            
+            await window.supabaseClient
+                .from('conductores')
+                .update({
+                    latitud: latitude,
+                    longitud: longitude,
+                    estado: estado
+                })
+                .eq('id', conductorId);
+            
         }, null, { enableHighAccuracy: true });
+        
+        // ✨ Actualizar resumen cada 30 segundos
+        setInterval(calcularResumenDiario, 30000);
     }
 }
 function detenerGPS() { if (watchId) navigator.geolocation.clearWatch(watchId); }
@@ -362,6 +392,8 @@ function trazarRuta(lat1, lng1, lat2, lng2) {
 function configurarPanelViaje() {
     const p = document.getElementById('activeTripPanel'); document.getElementById('connectionPanel').style.display = 'none'; p.style.display = 'block';
     document.getElementById('tripPrice').textContent = `L. ${currentTrip.precio}`;
+    // ✨ MEJORA 4: Actualizar desglose financiero
+    actualizarDesgloseFinanciero(currentTrip.precio);
     document.getElementById('txtOrigen').textContent = currentTrip.origen_direccion || "Origen";
     document.getElementById('txtDestino').textContent = currentTrip.destino_direccion || "Destino";
     document.getElementById('tripStats').textContent = "Calculando...";
@@ -399,7 +431,31 @@ async function checkViajePendiente() {
 
 let clientPhone = ""; 
 function contactarCliente() { if(!clientPhone) return alert("Sin número"); window.open(`https://wa.me/504${clientPhone}`, '_blank'); }
-function sonarAlerta() { const c = new (window.AudioContext||window.webkitAudioContext)(); const o = c.createOscillator(); o.connect(c.destination); o.start(); setTimeout(()=>o.stop(),800); }
+
+function sonarAlerta() {
+    // Sonido
+    try {
+        const c = new (window.AudioContext || window.webkitAudioContext)();
+        const o = c.createOscillator();
+        o.connect(c.destination);
+        o.start();
+        setTimeout(() => o.stop(), 800);
+    } catch (e) {
+        console.log("Audio no soportado");
+    }
+    
+    // ✨ MEJORA 5: Vibración
+    if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 200]);
+    }
+    
+    // Animación visual
+    const modalTrip = document.getElementById('modalTrip');
+    if (modalTrip) {
+        modalTrip.classList.add('vibrating');
+        setTimeout(() => modalTrip.classList.remove('vibrating'), 1000);
+    }
+}
 
 // === NUEVA RECARGA ===
 function abrirModalRecarga() { document.getElementById('modalRecarga').style.display='flex'; document.getElementById('recMonto').value=''; document.getElementById('recRef').value=''; document.getElementById('recFoto').value=''; document.getElementById('recStatus').innerText=''; document.getElementById('btnEnviarRecarga').disabled=false; document.getElementById('btnEnviarRecarga').innerText="ENVIAR COMPROBANTE"; }
@@ -440,18 +496,159 @@ async function enviarMensaje() { const i = document.getElementById('chatInput');
 function abrirChat() { document.getElementById('chatModal').style.display = 'flex'; document.getElementById('badgeChat').style.display = 'none'; document.getElementById('chatBody').scrollTop = document.getElementById('chatBody').scrollHeight; } 
 function cerrarChat() { document.getElementById('chatModal').style.display = 'none'; }
 
+async function enviarMensajeRapido(texto) {
+    if (!currentTrip || !currentTrip.id) return;
+    
+    try {
+        await window.supabaseClient
+            .from('mensajes')
+            .insert({
+                carrera_id: currentTrip.id,
+                remitente_rol: 'conductor',
+                texto: texto
+            });
+        
+        console.log("✅ Mensaje rápido enviado:", texto);
+        
+    } catch (e) {
+        console.error("Error enviando mensaje rápido:", e);
+    }
+}
+
+function actualizarDesgloseFinanciero(precio) {
+    const precioNum = parseFloat(precio);
+    const comision = precioNum * 0.10;
+    const ganancia = precioNum - comision;
+    
+    document.getElementById('tripFullPrice').textContent = `L. ${precioNum.toFixed(2)}`;
+    document.getElementById('tripCommission').textContent = `- L. ${comision.toFixed(2)}`;
+    document.getElementById('tripNetEarnings').textContent = `L. ${ganancia.toFixed(2)}`;
+}
+
+async function detectarZonaActual(lat, lng) {
+    try {
+        const { data: zona, error } = await window.supabaseClient.rpc('identificar_zona', {
+            lat: lat,
+            lng: lng
+        });
+        
+        if (error) {
+            console.error("Error detectando zona:", error);
+            return;
+        }
+        
+        if (zona && zona.nombre) {
+            currentZoneName = zona.nombre;
+            document.getElementById('zoneName').textContent = zona.nombre;
+            document.getElementById('zoneName').style.color = '#2979ff';
+        } else {
+            currentZoneName = "Fuera de zona";
+            document.getElementById('zoneName').textContent = "Fuera de cobertura";
+            document.getElementById('zoneName').style.color = '#ef4444';
+        }
+        
+    } catch (e) {
+        console.error("Error en detector de zona:", e);
+    }
+}
+
 // === AUXILIARES ===
-async function abrirHistorial() { document.getElementById('historyPanel').style.display = 'flex'; document.getElementById('historyList').innerHTML = "Cargando..."; const { data } = await window.supabaseClient.from('carreras').select('*').eq('conductor_id', conductorId).eq('estado', 'completada').order('fecha_solicitud', { ascending: false }).limit(50); const list = document.getElementById('historyList'); list.innerHTML = ""; if(!data || !data.length) { document.getElementById('totalEarnings').textContent="L. 0"; return list.innerHTML = "<p>Sin viajes.</p>"; } let total = 0; data.forEach(v => { total += parseFloat(v.precio); list.innerHTML += `<div class="history-card"><div class="history-header"><span style="color:#888; font-size:0.9rem">${new Date(v.fecha_solicitud).toLocaleDateString()}</span><span class="history-price">L. ${v.precio}</span></div></div>`; }); document.getElementById('totalEarnings').textContent = `L. ${total.toFixed(2)}`; }
+async function abrirHistorial() {
+    document.getElementById('historyPanel').style.display = 'flex';
+    document.getElementById('historyList').innerHTML = "Cargando...";
+    
+    const { data } = await window.supabaseClient
+        .from('carreras')
+        .select('*, clientes(perfiles(nombre))')
+        .eq('conductor_id', conductorId)
+        .eq('estado', 'completada')
+        .order('fecha_solicitud', { ascending: false })
+        .limit(50);
+    
+    const list = document.getElementById('historyList');
+    list.innerHTML = "";
+    
+    if(!data || !data.length) {
+        document.getElementById('totalEarnings').textContent = "L. 0";
+        return list.innerHTML = "<p style='color:#888;text-align:center;padding:20px'>Sin viajes completados</p>";
+    }
+    
+    let total = 0;
+    data.forEach(v => {
+        const precio = parseFloat(v.precio);
+        const comision = precio * 0.10;
+        const ganancia = precio - comision;
+        total += ganancia;
+        
+        const fecha = new Date(v.fecha_solicitud).toLocaleDateString('es-HN', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        const cliente = v.clientes?.perfiles?.nombre || 'Cliente';
+        
+        list.innerHTML += `
+            <div class="history-card">
+                <div class="history-header">
+                    <span class="history-date">${fecha}</span>
+                    <span class="history-price">L. ${ganancia.toFixed(2)}</span>
+                </div>
+                <div class="history-details">
+                    <div class="history-row">
+                        <span class="history-icon">👤</span>
+                        <span>${cliente}</span>
+                    </div>
+                    <div class="history-row">
+                        <span class="history-icon">📍</span>
+                        <span>${v.origen_direccion || 'Origen'}</span>
+                    </div>
+                    <div class="history-row">
+                        <span class="history-icon">🎯</span>
+                        <span>${v.destino_direccion || 'Destino'}</span>
+                    </div>
+                </div>
+                <div class="history-breakdown">
+                    <div class="breakdown-row">
+                        <span>Tarifa cobrada:</span>
+                        <span>L. ${precio.toFixed(2)}</span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span>Comisión (10%):</span>
+                        <span>- L. ${comision.toFixed(2)}</span>
+                    </div>
+                    <div class="breakdown-row total">
+                        <span>Tu ganancia:</span>
+                        <span>L. ${ganancia.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('totalEarnings').textContent = `L. ${total.toFixed(2)}`;
+}
 async function abrirPerfil() { document.getElementById('profilePanel').style.display='flex'; const {data:{session}} = await window.supabaseClient.auth.getSession(); const {data:p} = await window.supabaseClient.from('perfiles').select('*').eq('id', session.user.id).single(); const {data:c} = await window.supabaseClient.from('conductores').select('*').eq('id', conductorId).single(); document.getElementById('pName').value=p.nombre; document.getElementById('pPhone').value=p.telefono; document.getElementById('pMoto').value=c.modelo_moto; document.getElementById('pPlate').value=c.placa; document.getElementById('pEmail').value=p.email; }
 async function guardarPerfil() { const n=document.getElementById('pName').value; const ph=document.getElementById('pPhone').value; const m=document.getElementById('pMoto').value; const pl=document.getElementById('pPlate').value; const {data:{session}} = await window.supabaseClient.auth.getSession(); await window.supabaseClient.from('perfiles').update({nombre:n, telefono:ph}).eq('id', session.user.id); await window.supabaseClient.from('conductores').update({modelo_moto:m, placa:pl}).eq('id', conductorId); alert("✅ Guardado"); document.getElementById('profilePanel').style.display='none'; }
 async function cerrarSesion() { if(confirm("¿Salir?")) { await window.supabaseClient.auth.signOut(); window.location.href='login.html'; } }
 
 async function calcularResumenDiario() {
     if(!window.supabaseClient || !conductorId) return;
+    
     const hoy = new Date().toISOString().split('T')[0];
-    const { data } = await window.supabaseClient.from('carreras').select('precio').eq('conductor_id', conductorId).eq('estado', 'completada').gte('fecha_solicitud', hoy + 'T00:00:00').lte('fecha_solicitud', hoy + 'T23:59:59');
-    let totalHoy = 0; let viajesHoy = 0;
-    if(data) { viajesHoy = data.length; data.forEach(c => totalHoy += parseFloat(c.precio)); }
-    document.getElementById('todayTrips').innerText = `Viajes: ${viajesHoy}`;
-    document.getElementById('todayEarnings').innerText = `Ganado: L. ${totalHoy.toFixed(2)}`;
-}
+    const { data } = await window.supabaseClient
+        .from('carreras')
+        .select('precio')
+        .eq('conductor_id', conductorId)
+        .eq('estado', 'completada')
+        .gte('fecha_solicitud', hoy + 'T00:00:00')
+        .lte('fecha_solicitud', hoy + 'T23:59:59');
+    
+    let totalHoy = 0;
+    let viajesHoy = 0;
+    
+    if(data) {
+        viajesHoy = data.length;
+        data.forEach(c => totalHoy += parseFloat(c.precio));
+    }

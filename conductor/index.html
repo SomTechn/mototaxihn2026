@@ -10,59 +10,85 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#FF6B35">
 
     <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #111; color: white; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            margin: 0; background: #000; color: white; 
+            font-family: 'Inter', sans-serif; height: 100vh; 
+            display: flex; flex-direction: column; overflow: hidden; 
+        }
+        
+        /* COLORES SOMAR EXPRESS */
+        :root {
+            --somar-orange: #FF6B35;
+            --somar-dark: #1a1a1a;
+            --somar-black: #000000;
+            --somar-white: #ffffff;
+        }
         
         /* BARRA SUPERIOR */
         .top-bar { 
-            padding: 12px 15px; background: #000; border-bottom: 1px solid #333; 
-            display: flex; justify-content: space-between; align-items: center; z-index: 1001; 
+            padding: 12px 15px; background: var(--somar-black); 
+            border-bottom: 2px solid var(--somar-orange); 
+            display: flex; justify-content: space-between; align-items: center; 
+            z-index: 1001; 
         }
         .app-title { 
-            font-size: 1.2rem; font-weight: 800; color: #00e676; 
+            font-size: 1.2rem; font-weight: 800; color: var(--somar-orange); 
             letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;
         }
-        .saldo { font-size: 1.1rem; font-weight: bold; color: #00e676; }
-        .btn-menu { background: none; border: none; font-size: 1.8rem; cursor: pointer; padding: 0; color: white; }
-        
-        /* MENÚ LATERAL */
-        #sideMenu {
-            position: fixed; top: 0; right: -100%; width: 85%; max-width: 320px; 
-            height: 100vh; background: #000; z-index: 5000; 
-            transition: right 0.3s ease; box-shadow: -5px 0 20px rgba(0,0,0,0.8);
-            display: flex; flex-direction: column;
+        .btn-menu { 
+            background: none; border: none; font-size: 1.8rem; 
+            cursor: pointer; padding: 0; color: var(--somar-orange); 
         }
-        #sideMenu.open { right: 0; }
+        
+        /* MENÚ LATERAL - LADO IZQUIERDO */
+        #sideMenu {
+            position: fixed; top: 0; left: -100%; width: 85%; max-width: 320px; 
+            height: 100vh; background: var(--somar-black); z-index: 5000; 
+            transition: left 0.3s ease; 
+            box-shadow: 5px 0 20px rgba(255, 107, 53, 0.3);
+            display: flex; flex-direction: column;
+            border-right: 2px solid var(--somar-orange);
+        }
+        #sideMenu.open { left: 0; }
         
         .menu-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); z-index: 4999; display: none;
+            background: rgba(0,0,0,0.8); z-index: 4999; display: none;
         }
         .menu-overlay.show { display: block; }
         
+        /* HEADER FIJO DEL MENÚ */
         .menu-header {
-            padding: 20px; background: linear-gradient(135deg, #1a1a1a, #000);
-            border-bottom: 1px solid #333; text-align: center;
+            padding: 25px 20px; 
+            background: linear-gradient(135deg, var(--somar-dark), var(--somar-black));
+            border-bottom: 2px solid var(--somar-orange); 
+            text-align: center;
+            flex-shrink: 0; /* No se comprime */
         }
         
         .profile-photo-container {
             width: 100px; height: 100px; margin: 0 auto 15px;
-            border-radius: 50%; overflow: hidden; border: 3px solid #00e676;
-            background: #222; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; overflow: hidden; 
+            border: 3px solid var(--somar-orange);
+            background: var(--somar-dark); 
+            display: flex; align-items: center; justify-content: center;
             position: relative; cursor: pointer;
         }
         .profile-photo-container img {
-            width: 100%; height: 100%; object-fit: cover;
+            width: 100%; height: 100%; 
+            object-fit: cover; /* Evita distorsión */
+            object-position: center; /* Centra la imagen */
         }
         .profile-photo-placeholder {
             font-size: 3rem; color: #555;
         }
         .photo-upload-overlay {
             position: absolute; bottom: 0; left: 0; right: 0;
-            background: rgba(0,230,118,0.9); padding: 5px;
+            background: rgba(255, 107, 53, 0.95); padding: 5px;
             font-size: 0.7rem; font-weight: 600; text-align: center;
             opacity: 0; transition: opacity 0.3s;
         }
@@ -71,39 +97,49 @@
         }
         
         .conductor-name {
-            font-size: 1.1rem; font-weight: 700; color: white; margin-bottom: 5px;
+            font-size: 1.1rem; font-weight: 700; 
+            color: var(--somar-white); margin-bottom: 5px;
         }
         .conductor-status {
             font-size: 0.85rem; color: #888; font-weight: 500;
         }
         
+        /* CONTENIDO SCROLLABLE DEL MENÚ */
+        .menu-scrollable {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
         /* SALDO EN MENÚ */
         .menu-balance {
-            background: linear-gradient(135deg, #00e676, #00c853);
+            background: linear-gradient(135deg, var(--somar-orange), #ff8c5a);
             padding: 20px; margin: 15px; border-radius: 15px;
-            text-align: center; box-shadow: 0 4px 15px rgba(0,230,118,0.3);
+            text-align: center; 
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
         }
         .menu-balance-label {
             color: rgba(0,0,0,0.7); font-size: 0.8rem; 
             font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
         }
         .menu-balance-amount {
-            font-size: 2.2rem; font-weight: 800; color: #000;
+            font-size: 2.2rem; font-weight: 800; color: var(--somar-black);
             margin: 5px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .btn-recharge {
-            background: #000; color: #00e676; padding: 10px 20px;
-            border: none; border-radius: 8px; font-weight: 700;
+            background: var(--somar-black); color: var(--somar-orange); 
+            padding: 10px 20px; border: 2px solid var(--somar-orange);
+            border-radius: 8px; font-weight: 700;
             cursor: pointer; margin-top: 10px; font-size: 0.9rem;
         }
         
         /* RESUMEN DEL DÍA EN MENÚ */
         .menu-daily-summary {
-            background: #1a1a1a; padding: 15px; margin: 0 15px 15px;
-            border-radius: 12px; border: 1px solid #333;
+            background: var(--somar-dark); padding: 15px; margin: 0 15px 15px;
+            border-radius: 12px; border: 1px solid var(--somar-orange);
         }
         .summary-title-menu {
-            color: #00e676; font-size: 0.75rem; font-weight: 700;
+            color: var(--somar-orange); font-size: 0.75rem; font-weight: 700;
             letter-spacing: 1px; margin-bottom: 12px; text-align: center;
         }
         .summary-grid {
@@ -113,26 +149,28 @@
         .summary-item {
             text-align: center; padding: 10px;
             background: #222; border-radius: 8px;
+            border: 1px solid #333;
         }
         .summary-item-label {
             color: #888; font-size: 0.7rem; margin-bottom: 5px;
         }
         .summary-item-value {
-            color: white; font-size: 1.1rem; font-weight: 700;
+            color: var(--somar-orange); font-size: 1.1rem; font-weight: 700;
         }
         
         /* OPCIONES DEL MENÚ */
         .menu-options {
-            flex: 1; overflow-y: auto; padding: 15px;
+            padding: 0 15px 15px;
         }
         .menu-item {
-            padding: 15px; margin-bottom: 10px; background: #1a1a1a;
+            padding: 15px; margin-bottom: 10px; background: var(--somar-dark);
             border-radius: 12px; border: 1px solid #333;
             display: flex; align-items: center; gap: 15px;
             cursor: pointer; transition: all 0.2s;
         }
         .menu-item:active {
             background: #2a2a2a; transform: scale(0.98);
+            border-color: var(--somar-orange);
         }
         .menu-item-icon {
             font-size: 1.8rem; width: 40px; text-align: center;
@@ -141,17 +179,20 @@
             flex: 1;
         }
         .menu-item-title {
-            font-size: 1rem; font-weight: 600; color: white; margin-bottom: 3px;
+            font-size: 1rem; font-weight: 600; 
+            color: var(--somar-white); margin-bottom: 3px;
         }
         .menu-item-desc {
             font-size: 0.75rem; color: #888;
         }
         .menu-item-arrow {
-            color: #555; font-size: 1.2rem;
+            color: var(--somar-orange); font-size: 1.2rem;
         }
         
         .menu-footer {
-            padding: 15px; border-top: 1px solid #333;
+            padding: 15px; border-top: 2px solid var(--somar-orange);
+            background: var(--somar-black);
+            flex-shrink: 0; /* No se comprime */
         }
         .btn-logout-menu {
             width: 100%; padding: 15px; background: #b91c1c;
@@ -162,178 +203,560 @@
         /* MAPA */
         #map { flex: 1; width: 100%; z-index: 0; }
         
-        /* INDICADOR DE ZONA ACTUAL */
+        /* MARCADOR PERSONALIZADO TIPO WAZE/GOOGLE MAPS */
+        .custom-marker {
+            width: 40px;
+            height: 40px;
+            background: var(--somar-orange);
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+        .custom-marker-icon {
+            transform: rotate(45deg);
+            font-size: 1.2rem;
+            color: white;
+        }
+        
+        /* INDICADOR DE ZONA */
         #currentZone {
             position: absolute; top: 70px; left: 10px; 
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             padding: 10px 15px; border-radius: 20px; 
-            border: 1px solid #2979ff; z-index: 900;
+            border: 2px solid var(--somar-orange); z-index: 900;
             display: flex; align-items: center; gap: 8px;
-            box-shadow: 0 4px 10px rgba(41, 121, 255, 0.3);
+            box-shadow: 0 4px 10px rgba(255, 107, 53, 0.4);
         }
         #currentZone .zone-icon { font-size: 1.2rem; }
         #currentZone .zone-name { 
-            font-size: 0.9rem; font-weight: 600; color: #2979ff; 
+            font-size: 0.9rem; font-weight: 600; color: var(--somar-orange); 
         }
 
-        /* BOTONES FLOTANTES */
+        /* BOTÓN DE ESTADO */
         .bottom-bar { 
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 1001; 
+            position: absolute; bottom: 20px; left: 50%; 
+            transform: translateX(-50%); z-index: 1001; 
         }
         .btn-status { 
             padding: 15px 30px; font-size: 1rem; font-weight: bold; 
-            border-radius: 30px; border: 1px solid #444; cursor: pointer; 
+            border-radius: 30px; border: 2px solid #444; cursor: pointer; 
             transition: 0.3s; text-transform: uppercase; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
         }
-        .offline { background: #333; color: #aaa; } 
-        .online { background: #00e676; color: black; box-shadow: 0 0 20px rgba(0, 230, 118, 0.6); border-color: #00e676; }
-
-        /* PANEL DE VIAJE ACTIVO */
-        #activeTripPanel { 
-            display: none; position: absolute; bottom: 0; left: 0; right: 0; 
-            background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; 
-            z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); 
-            max-height: 60vh; overflow-y: auto; 
+        .offline { 
+            background: #333; color: #aaa; 
+        } 
+        .online { 
+            background: var(--somar-orange); color: var(--somar-black); 
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.6); 
+            border-color: var(--somar-orange); 
+            font-weight: 800;
         }
-        .trip-info-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+
+    /* PANEL DE VIAJE ACTIVO - ESTILO WAZE EXPANDIBLE/COLAPSABLE */
+        #activeTripPanel { 
+            display: none; 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: var(--somar-black); 
+            border-top: 3px solid var(--somar-orange);
+            z-index: 2000; 
+            box-shadow: 0 -5px 30px rgba(255, 107, 53, 0.3); 
+            transition: transform 0.3s ease;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #activeTripPanel.collapsed {
+            transform: translateY(calc(100% - 80px));
+        }
+        
+        .trip-drag-handle {
+            width: 100%;
+            padding: 10px;
+            background: var(--somar-dark);
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
+        }
+        
+        .trip-drag-indicator {
+            width: 40px;
+            height: 4px;
+            background: var(--somar-orange);
+            border-radius: 2px;
+            margin: 0 auto;
+        }
+        
+        .trip-summary-collapsed {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px 5px;
+            flex-shrink: 0;
+        }
+        
+        .trip-summary-collapsed .trip-price-big {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--somar-orange);
+        }
+        
+        .trip-summary-collapsed .trip-eta {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        .trip-content-scrollable {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .trip-info-header { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 15px; 
+            align-items: center; 
+        }
         
         /* DESGLOSE FINANCIERO */
         .trip-financial-breakdown {
-            background: #2a2a2a; padding: 15px; border-radius: 10px; 
-            margin-bottom: 15px; border: 1px solid #333;
+            background: var(--somar-dark); 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            border: 1px solid var(--somar-orange);
         }
         .financial-row {
-            display: flex; justify-content: space-between; 
-            padding: 8px 0; border-bottom: 1px solid #333;
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0; 
+            border-bottom: 1px solid #333;
         }
         .financial-row:last-child { border-bottom: none; }
         .financial-label { color: #94a3b8; font-size: 0.9rem; }
         .financial-value { font-weight: 600; color: white; }
         .financial-total { 
-            background: #00e676; color: black; 
-            padding: 10px; border-radius: 8px; margin-top: 10px;
-            display: flex; justify-content: space-between;
-            font-weight: 700; font-size: 1.1rem;
+            background: var(--somar-orange); 
+            color: var(--somar-black); 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-top: 10px;
+            display: flex; 
+            justify-content: space-between;
+            font-weight: 700; 
+            font-size: 1.1rem;
         }
         
-        .trip-details { background: #2a2a2a; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; }
+        .trip-details { 
+            background: var(--somar-dark); 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            font-size: 0.9rem;
+            border: 1px solid #333;
+        }
         .trip-row { display: flex; margin-bottom: 8px; } 
         .trip-icon { width: 20px; margin-right: 10px; text-align: center; }
-        .btn-action { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        .btn-primary { background: #2979ff; color: white; } 
-        .btn-finish { background: #00e676; color: black; }
-        .btn-nav { background: #333; color: white; border: 1px solid #555; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-right: 5px; }
+        .btn-action { 
+            width: 100%; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            border-radius: 10px; 
+            border: none; 
+            font-weight: bold; 
+            font-size: 1.1rem; 
+            cursor: pointer; 
+        }
+        .btn-primary { 
+            background: #2979ff; 
+            color: white; 
+        } 
+        .btn-finish { 
+            background: var(--somar-orange); 
+            color: var(--somar-black);
+            font-weight: 800;
+        }
+        .btn-nav { 
+            background: #333; 
+            color: white; 
+            border: 1px solid #555; 
+            padding: 8px 15px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+            margin-right: 5px; 
+        }
         
         /* MENSAJES PREDEFINIDOS */
         .quick-messages {
-            background: #2a2a2a; padding: 12px; border-radius: 10px;
-            margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 8px;
+            background: var(--somar-dark); 
+            padding: 12px; 
+            border-radius: 10px;
+            margin-bottom: 15px; 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px;
+            border: 1px solid #333;
         }
         .quick-msg-btn {
-            background: #374151; color: white; border: 1px solid #4b5563;
-            padding: 8px 12px; border-radius: 8px; cursor: pointer;
-            font-size: 0.85rem; font-weight: 600; transition: all 0.2s;
-        }
-        .quick-msg-btn:active {
-            background: #2979ff; border-color: #2979ff; transform: scale(0.95);
-        }
-        
-        .btn-contact { background: #444; color: white; border: 1px solid #666; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        #badgeChat { background: red; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; display: none; margin-left: 5px; }
-
-        /* MODALES */
-        .modal-fs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 3000; padding: 20px; overflow-y: auto; display: none; flex-direction: column; }
-        .modal-header { display: flex; align-items: center; margin-bottom: 20px; } 
-        .back-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; margin-right: 10px; }
-        /* HISTORIAL DE VIAJES MEJORADO */
-        .history-card { 
-            background: #1a1a1a; padding: 15px; border-radius: 12px; 
-            margin-bottom: 10px; border: 1px solid #333;
+            background: #374151; 
+            color: white; 
+            border: 1px solid #4b5563;
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 0.85rem; 
+            font-weight: 600; 
             transition: all 0.2s;
         }
-        .history-card:active { background: #2a2a2a; }
+        .quick-msg-btn:active {
+            background: var(--somar-orange); 
+            border-color: var(--somar-orange);
+            color: var(--somar-black);
+            transform: scale(0.95);
+        }
+        
+        .btn-contact { 
+            background: #444; 
+            color: white; 
+            border: 1px solid #666; 
+            padding: 8px 15px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+        }
+        #badgeChat { 
+            background: red; 
+            color: white; 
+            font-size: 0.7rem; 
+            padding: 2px 6px; 
+            border-radius: 10px; 
+            display: none; 
+            margin-left: 5px; 
+        }
+
+        /* MODALES */
+        .modal-fs { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: var(--somar-black); 
+            z-index: 3000; 
+            padding: 20px; 
+            overflow-y: auto; 
+            display: none; 
+            flex-direction: column; 
+        }
+        .modal-header { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        } 
+        .back-btn { 
+            background: none; 
+            border: none; 
+            font-size: 1.5rem; 
+            cursor: pointer; 
+            color: var(--somar-orange); 
+            margin-right: 10px; 
+        }
+        
+        /* HISTORIAL DE VIAJES MEJORADO */
+        .history-card { 
+            background: var(--somar-dark); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 10px; 
+            border: 1px solid #333;
+            transition: all 0.2s;
+        }
+        .history-card:active { 
+            background: #2a2a2a; 
+            border-color: var(--somar-orange);
+        }
         .history-header {
-            display: flex; justify-content: space-between; 
-            margin-bottom: 10px; padding-bottom: 10px;
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 10px; 
+            padding-bottom: 10px;
             border-bottom: 1px solid #333;
         }
         .history-date { color: #888; font-size: 0.85rem; }
         .history-price { 
-            color: #00e676; font-weight: 700; font-size: 1.1rem; 
+            color: var(--somar-orange); 
+            font-weight: 700; 
+            font-size: 1.1rem; 
         }
         .history-details {
-            display: flex; flex-direction: column; gap: 5px;
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px;
         }
         .history-row {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 0.85rem; color: #cbd5e1;
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            font-size: 0.85rem; 
+            color: #cbd5e1;
         }
         .history-icon { font-size: 1rem; }
         .history-breakdown {
-            background: #2a2a2a; padding: 8px; border-radius: 6px;
-            margin-top: 8px; font-size: 0.8rem;
+            background: #222; 
+            padding: 8px; 
+            border-radius: 6px;
+            margin-top: 8px; 
+            font-size: 0.8rem;
         }
         .breakdown-row {
-            display: flex; justify-content: space-between;
-            padding: 4px 0; color: #94a3b8;
+            display: flex; 
+            justify-content: space-between;
+            padding: 4px 0; 
+            color: #94a3b8;
         }
         .breakdown-row.total {
-            color: #00e676; font-weight: 600;
-            border-top: 1px solid #333; padding-top: 6px;
+            color: var(--somar-orange); 
+            font-weight: 600;
+            border-top: 1px solid #333; 
+            padding-top: 6px;
             margin-top: 4px;
         }
         
-        .earnings-box { background: linear-gradient(135deg, #1e1e1e, #111); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; margin-bottom: 20px; }
+        .earnings-box { 
+            background: linear-gradient(135deg, var(--somar-dark), var(--somar-black)); 
+            padding: 20px; 
+            border-radius: 15px; 
+            border: 2px solid var(--somar-orange); 
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
         
-        input { width: 100%; padding: 14px; background: #222; border: 1px solid #444; border-radius: 10px; margin-bottom: 15px; color: white; box-sizing: border-box; font-size: 1rem; } 
-        label { color: #888; font-size: 0.9rem; margin-bottom: 5px; display: block; }
-        .btn-save { width: 100%; padding: 15px; background: #00e676; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            background: #222; 
+            border: 1px solid #444; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            color: white; 
+            box-sizing: border-box; 
+            font-size: 1rem; 
+        } 
+        input:focus {
+            border-color: var(--somar-orange);
+            outline: none;
+        }
+        label { 
+            color: #888; 
+            font-size: 0.9rem; 
+            margin-bottom: 5px; 
+            display: block; 
+        }
+        .btn-save { 
+            width: 100%; 
+            padding: 15px; 
+            background: var(--somar-orange); 
+            color: var(--somar-black); 
+            border: none; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 1.1rem; 
+        }
 
         /* ESTILOS PARA OFERTA DESLIZABLE */
-        #modalTrip { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
-        #previewMap { width: 100%; max-width: 350px; height: 220px; border-radius: 15px; margin: 15px 0; border: 2px solid #333; }
+        #modalTrip { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: rgba(0,0,0,0.95); 
+            z-index: 9999; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            padding: 20px; 
+        }
+        #previewMap { 
+            width: 100%; 
+            max-width: 350px; 
+            height: 220px; 
+            border-radius: 15px; 
+            margin: 15px 0; 
+            border: 2px solid var(--somar-orange); 
+        }
         
         /* Barra de Tiempo */
-        .timer-bar { width: 100%; max-width: 300px; height: 6px; background: #333; border-radius: 3px; margin: 10px 0; overflow: hidden; }
-        .timer-fill { height: 100%; width: 100%; background: #00e676; transition: width 1s linear; }
+        .timer-bar { 
+            width: 100%; 
+            max-width: 300px; 
+            height: 6px; 
+            background: #333; 
+            border-radius: 3px; 
+            margin: 10px 0; 
+            overflow: hidden; 
+        }
+        .timer-fill { 
+            height: 100%; 
+            width: 100%; 
+            background: var(--somar-orange); 
+            transition: width 1s linear; 
+        }
 
         /* Contenedor de Sliders */
-        .slider-wrapper { width: 100%; max-width: 320px; margin-top: 15px; display: flex; flex-direction: column; gap: 15px; }
+        .slider-wrapper { 
+            width: 100%; 
+            max-width: 320px; 
+            margin-top: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
 
         /* Estilo base del Slider */
         .slider-container {
-            position: relative; width: 100%; height: 55px; border-radius: 30px;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden; user-select: none; touch-action: none;
+            position: relative; 
+            width: 100%; 
+            height: 55px; 
+            border-radius: 30px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            overflow: hidden; 
+            user-select: none; 
+            touch-action: none;
         }
         
         /* Slider Aceptar */
-        .slider-accept { background: #1b5e20; border: 1px solid #2e7d32; }
-        .slider-accept .slider-text { color: #a5d6a7; font-weight: bold; font-size: 0.9rem; z-index: 1; }
-        .slider-accept .slider-btn { background: #00e676; color: black; left: 4px; }
+        .slider-accept { 
+            background: #1b5e20; 
+            border: 2px solid var(--somar-orange); 
+        }
+        .slider-accept .slider-text { 
+            color: #a5d6a7; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            z-index: 1; 
+        }
+        .slider-accept .slider-btn { 
+            background: var(--somar-orange); 
+            color: var(--somar-black); 
+            left: 4px; 
+        }
 
         /* Slider Rechazar */
-        .slider-reject { background: #450a0a; border: 1px solid #7f1d1d; }
-        .slider-reject .slider-text { color: #fca5a5; font-weight: bold; font-size: 0.9rem; z-index: 1; }
-        .slider-reject .slider-btn { background: #ef4444; color: white; right: 4px; }
+        .slider-reject { 
+            background: #450a0a; 
+            border: 2px solid #7f1d1d; 
+        }
+        .slider-reject .slider-text { 
+            color: #fca5a5; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            z-index: 1; 
+        }
+        .slider-reject .slider-btn { 
+            background: #ef4444; 
+            color: white; 
+            right: 4px; 
+        }
 
         /* Botón Arrastrable */
         .slider-btn {
-            position: absolute; width: 48px; height: 48px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; cursor: grab; z-index: 2; top: 3px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: transform 0.1s;
+            position: absolute; 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 50%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 1.5rem; 
+            cursor: grab; 
+            z-index: 2; 
+            top: 3px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
+            transition: transform 0.1s;
+            font-weight: 800;
         }
 
-        .chat-modal { position: fixed; bottom: 0; left: 0; right: 0; top: 0; background: #000; z-index: 4000; display: none; flex-direction: column; }
-        .chat-header { background: #1e1e1e; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #333; }
-        .chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #111; }
-        .chat-footer { padding: 10px; background: #1e1e1e; display: flex; gap: 10px; border-top: 1px solid #333; }
-        .bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
-        .bubble-me { align-self: flex-end; background: #2979ff; color: white; border-bottom-right-radius: 2px; }
-        .bubble-other { align-self: flex-start; background: #222; color: #ddd; border-bottom-left-radius: 2px; border: 1px solid #444; }
+        .chat-modal { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            top: 0; 
+            background: var(--somar-black); 
+            z-index: 4000; 
+            display: none; 
+            flex-direction: column; 
+        }
+        .chat-header { 
+            background: var(--somar-dark); 
+            color: white; 
+            padding: 15px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            font-weight: bold; 
+            border-bottom: 2px solid var(--somar-orange); 
+        }
+        .chat-body { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            background: #111; 
+        }
+        .chat-footer { 
+            padding: 10px; 
+            background: var(--somar-dark); 
+            display: flex; 
+            gap: 10px; 
+            border-top: 2px solid var(--somar-orange); 
+        }
+        .bubble { 
+            max-width: 80%; 
+            padding: 10px 15px; 
+            border-radius: 15px; 
+            font-size: 0.95rem; 
+            line-height: 1.4; 
+            word-wrap: break-word; 
+        }
+        .bubble-me { 
+            align-self: flex-end; 
+            background: var(--somar-orange); 
+            color: var(--somar-black); 
+            border-bottom-right-radius: 2px; 
+            font-weight: 600;
+        }
+        .bubble-other { 
+            align-self: flex-start; 
+            background: #222; 
+            color: #ddd; 
+            border-bottom-left-radius: 2px; 
+            border: 1px solid #444; 
+        }
 
         .leaflet-routing-container { display: none !important; }
         
@@ -349,14 +772,27 @@
 
         /* Input file oculto */
         #photoInput { display: none; }
+        
+        /* Scrollbar personalizado */
+        .menu-scrollable::-webkit-scrollbar {
+            width: 6px;
+        }
+        .menu-scrollable::-webkit-scrollbar-track {
+            background: var(--somar-black);
+        }
+        .menu-scrollable::-webkit-scrollbar-thumb {
+            background: var(--somar-orange);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
     <!-- OVERLAY DEL MENÚ -->
     <div class="menu-overlay" id="menuOverlay" onclick="cerrarMenu()"></div>
 
-    <!-- MENÚ LATERAL -->
+    <!-- MENÚ LATERAL - LADO IZQUIERDO -->
     <div id="sideMenu">
+        <!-- HEADER FIJO -->
         <div class="menu-header">
             <div class="profile-photo-container" onclick="document.getElementById('photoInput').click()">
                 <img id="profilePhoto" src="" alt="" style="display:none">
@@ -368,58 +804,61 @@
             <div class="conductor-status" id="menuConductorStatus">Desconectado</div>
         </div>
 
-        <!-- SALDO -->
-        <div class="menu-balance">
-            <div class="menu-balance-label">💰 Tu Saldo</div>
-            <div class="menu-balance-amount" id="menuBalance">L 0.00</div>
-            <button class="btn-recharge" onclick="abrirModalRecarga(); cerrarMenu();">+ Recargar Saldo</button>
-        </div>
+        <!-- CONTENIDO SCROLLABLE -->
+        <div class="menu-scrollable">
+            <!-- SALDO -->
+            <div class="menu-balance">
+                <div class="menu-balance-label">💰 Tu Saldo</div>
+                <div class="menu-balance-amount" id="menuBalance">L 0.00</div>
+                <button class="btn-recharge" onclick="abrirModalRecarga(); cerrarMenu();">+ Recargar Saldo</button>
+            </div>
 
-        <!-- RESUMEN DEL DÍA -->
-        <div class="menu-daily-summary">
-            <div class="summary-title-menu">📊 RESUMEN DE HOY</div>
-            <div class="summary-grid">
-                <div class="summary-item">
-                    <div class="summary-item-label">Viajes</div>
-                    <div class="summary-item-value" id="menuTodayTrips">0</div>
+            <!-- RESUMEN DEL DÍA -->
+            <div class="menu-daily-summary">
+                <div class="summary-title-menu">📊 RESUMEN DE HOY</div>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-item-label">Viajes</div>
+                        <div class="summary-item-value" id="menuTodayTrips">0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-item-label">Ganancias</div>
+                        <div class="summary-item-value" id="menuTodayEarnings">L 0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-item-label">Horas</div>
+                        <div class="summary-item-value" id="menuTodayHours">0h</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-item-label">Promedio</div>
+                        <div class="summary-item-value" id="menuTodayAverage">L 0</div>
+                    </div>
                 </div>
-                <div class="summary-item">
-                    <div class="summary-item-label">Ganancias</div>
-                    <div class="summary-item-value" id="menuTodayEarnings">L 0</div>
+            </div>
+
+            <!-- OPCIONES DEL MENÚ -->
+            <div class="menu-options">
+                <div class="menu-item" onclick="abrirHistorial(); cerrarMenu();">
+                    <div class="menu-item-icon">💰</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-title">Historial de Viajes</div>
+                        <div class="menu-item-desc">Ver todas tus carreras completadas</div>
+                    </div>
+                    <div class="menu-item-arrow">›</div>
                 </div>
-                <div class="summary-item">
-                    <div class="summary-item-label">Horas</div>
-                    <div class="summary-item-value" id="menuTodayHours">0h</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-item-label">Promedio</div>
-                    <div class="summary-item-value" id="menuTodayAverage">L 0</div>
+
+                <div class="menu-item" onclick="abrirPerfil(); cerrarMenu();">
+                    <div class="menu-item-icon">⚙️</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-title">Mi Perfil</div>
+                        <div class="menu-item-desc">Editar información personal</div>
+                    </div>
+                    <div class="menu-item-arrow">›</div>
                 </div>
             </div>
         </div>
 
-        <!-- OPCIONES DEL MENÚ -->
-        <div class="menu-options">
-            <div class="menu-item" onclick="abrirHistorial(); cerrarMenu();">
-                <div class="menu-item-icon">💰</div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Historial de Viajes</div>
-                    <div class="menu-item-desc">Ver todas tus carreras completadas</div>
-                </div>
-                <div class="menu-item-arrow">›</div>
-            </div>
-
-            <div class="menu-item" onclick="abrirPerfil(); cerrarMenu();">
-                <div class="menu-item-icon">⚙️</div>
-                <div class="menu-item-content">
-                    <div class="menu-item-title">Mi Perfil</div>
-                    <div class="menu-item-desc">Editar información personal</div>
-                </div>
-                <div class="menu-item-arrow">›</div>
-            </div>
-        </div>
-
-        <!-- FOOTER -->
+        <!-- FOOTER FIJO -->
         <div class="menu-footer">
             <button class="btn-logout-menu" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
         </div>
@@ -427,11 +866,12 @@
 
     <!-- BARRA SUPERIOR -->
     <div class="top-bar">
+        <button class="btn-menu" onclick="abrirMenu()">☰</button>
         <div class="app-title">
             <span>🏍️</span>
             <span>Somar Conductor</span>
         </div>
-        <button class="btn-menu" onclick="abrirMenu()">☰</button>
+        <div style="width: 40px;"></div> <!-- Espaciador para centrar -->
     </div>
 
     <!-- INDICADOR DE ZONA ACTUAL -->
@@ -446,60 +886,80 @@
         <button id="btnStatus" class="btn-status offline" onclick="toggleStatus()">DESCONECTADO 🔴</button>
     </div>
 
-    <div id="activeTripPanel">
-        <div class="trip-info-header">
+    <!-- PANEL DE VIAJE ACTIVO - ESTILO WAZE -->
+    <div id="activeTripPanel" class="collapsed">
+        <!-- HANDLE PARA ARRASTRAR -->
+        <div class="trip-drag-handle" onclick="toggleTripPanel()">
+            <div class="trip-drag-indicator"></div>
+        </div>
+        
+        <!-- RESUMEN VISIBLE CUANDO ESTÁ COLAPSADO -->
+        <div class="trip-summary-collapsed">
             <div>
-                <h3 id="tripStepTitle" style="margin:0; color:#fff">Recogiendo...</h3>
-                <div style="display:flex; align-items:center; gap:10px; margin-top:5px">
-                    <div id="tripPrice" style="font-size:1.4rem; font-weight:bold; color:#00e676">L. --</div>
-                    <span id="tripStats" style="color:#aaa; font-size:0.9rem">-- km • -- min</span>
+                <div class="trip-price-big" id="tripPriceCollapsed">L. --</div>
+                <div class="trip-eta" id="tripEtaCollapsed">-- min</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="color: var(--somar-orange); font-weight: 600;" id="tripStepCollapsed">Recogiendo</div>
+            </div>
+        </div>
+        
+        <!-- CONTENIDO COMPLETO (VISIBLE AL EXPANDIR) -->
+        <div class="trip-content-scrollable">
+            <div class="trip-info-header">
+                <div>
+                    <h3 id="tripStepTitle" style="margin:0; color:#fff">Recogiendo...</h3>
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:5px">
+                        <div id="tripPrice" style="font-size:1.4rem; font-weight:bold; color: var(--somar-orange)">L. --</div>
+                        <span id="tripStats" style="color:#aaa; font-size:0.9rem">-- km • -- min</span>
+                    </div>
+                </div>
+                <div style="display:flex; gap:5px">
+                    <button class="btn-contact" onclick="abrirChat()">💬 Chat <span id="badgeChat">!</span></button>
+                    <button class="btn-nav" onclick="abrirWaze()">🗺️</button>
                 </div>
             </div>
-            <div style="display:flex; gap:5px">
-                <button class="btn-contact" onclick="abrirChat()">💬 Chat <span id="badgeChat">!</span></button>
-                <button class="btn-nav" onclick="abrirWaze()">🗺️</button>
+            
+            <div class="trip-financial-breakdown">
+                <div class="financial-row">
+                    <span class="financial-label">💵 Tarifa del viaje</span>
+                    <span class="financial-value" id="tripFullPrice">L. --</span>
+                </div>
+                <div class="financial-row">
+                    <span class="financial-label">⚙️ Comisión (10%)</span>
+                    <span class="financial-value" id="tripCommission">- L. --</span>
+                </div>
+                <div class="financial-total">
+                    <span>Tu Ganancia Neta:</span>
+                    <span id="tripNetEarnings">L. --</span>
+                </div>
             </div>
-        </div>
-        
-        <div class="trip-financial-breakdown">
-            <div class="financial-row">
-                <span class="financial-label">💵 Tarifa del viaje</span>
-                <span class="financial-value" id="tripFullPrice">L. --</span>
-            </div>
-            <div class="financial-row">
-                <span class="financial-label">⚙️ Comisión (10%)</span>
-                <span class="financial-value" id="tripCommission">- L. --</span>
-            </div>
-            <div class="financial-total">
-                <span>Tu Ganancia Neta:</span>
-                <span id="tripNetEarnings">L. --</span>
-            </div>
-        </div>
 
-        <div class="quick-messages">
-            <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya voy en camino 🚗')">Ya voy 🚗</button>
-            <button class="quick-msg-btn" onclick="enviarMensajeRapido('Llego en 5 minutos ⏱️')">5 min ⏱️</button>
-            <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya llegué, estoy esperando 📍')">Llegué 📍</button>
-            <button class="quick-msg-btn" onclick="enviarMensajeRapido('¿Dónde te encuentras? 📱')">¿Dónde? 📱</button>
+            <div class="quick-messages">
+                <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya voy en camino 🚗')">Ya voy 🚗</button>
+                <button class="quick-msg-btn" onclick="enviarMensajeRapido('Llego en 5 minutos ⏱️')">5 min ⏱️</button>
+                <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya llegué, estoy esperando 📍')">Llegué 📍</button>
+                <button class="quick-msg-btn" onclick="enviarMensajeRapido('¿Dónde te encuentras? 📱')">¿Dónde? 📱</button>
+            </div>
+            
+            <div class="trip-details">
+                <div style="color:#aaa; font-size:0.8rem; margin-bottom:5px">Cliente: <span id="lblClientName" style="color:white; font-weight:bold">--</span></div>
+                <div class="trip-row"><div class="trip-icon">🔵</div><div id="txtOrigen" style="color:#ddd">--</div></div>
+                <div class="trip-row" style="margin-bottom:0"><div class="trip-icon">🔴</div><div id="txtDestino" style="color:#ddd">--</div></div>
+            </div>
+            <button id="btnTripAction" class="btn-action btn-primary" onclick="avanzarViaje()">YA LLEGUÉ</button>
+            <button class="btn-action" style="background:transparent; color:#ef4444; border:1px solid #ef4444" onclick="cancelarViaje()">Cancelar</button>
         </div>
-        
-        <div class="trip-details">
-            <div style="color:#aaa; font-size:0.8rem; margin-bottom:5px">Cliente: <span id="lblClientName" style="color:white; font-weight:bold">--</span></div>
-            <div class="trip-row"><div class="trip-icon">🔵</div><div id="txtOrigen" style="color:#ddd">--</div></div>
-            <div class="trip-row" style="margin-bottom:0"><div class="trip-icon">🔴</div><div id="txtDestino" style="color:#ddd">--</div></div>
-        </div>
-        <button id="btnTripAction" class="btn-action btn-primary" onclick="avanzarViaje()">YA LLEGUÉ</button>
-        <button class="btn-action" style="background:transparent; color:#ef4444; border:1px solid #ef4444" onclick="cancelarViaje()">Cancelar</button>
     </div>
 
     <div id="modalTrip">
-        <h2 style="color: #2979ff; margin-bottom:5px">¡NUEVO VIAJE!</h2>
+        <h2 style="color: var(--somar-orange); margin-bottom:5px">¡NUEVO VIAJE!</h2>
         <h1 id="alertPrice" style="color: white; font-size:3rem; margin:0">L. --</h1>
         
         <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
         <div style="color:#888; margin-bottom: 10px; font-size: 0.9rem">Cierra en <span id="timerText">30</span>s</div>
 
-        <div id="modalStats" style="color:#00e676; font-weight:bold; margin-bottom:5px; font-size:1.2rem">-- km • -- min</div>
+        <div id="modalStats" style="color: var(--somar-orange); font-weight:bold; margin-bottom:5px; font-size:1.2rem">-- km • -- min</div>
         <div id="previewMap"></div>
         <p style="color: #aaa; font-size:0.9rem">Verde: Recogida | Azul: Destino</p>
         
@@ -524,7 +984,7 @@
             <label>Referencia</label><input type="text" id="recRef" placeholder="Ej: BAC-1234">
             <label>Foto</label><input type="file" id="recFoto" accept="image/*" style="padding: 10px;">
             <button id="btnEnviarRecarga" class="btn-save" onclick="enviarRecarga()">ENVIAR COMPROBANTE</button>
-            <p id="recStatus" style="text-align:center; color:#00e676; margin-top:10px"></p>
+            <p id="recStatus" style="text-align:center; color: var(--somar-orange); margin-top:10px"></p>
         </div>
     </div>
 
@@ -535,7 +995,7 @@
         </div>
         <div class="earnings-box">
             <span style="color:#888; font-size:0.9rem">Total Acumulado</span>
-            <div id="totalEarnings" style="font-size: 2rem; color:#00e676">L. 0</div>
+            <div id="totalEarnings" style="font-size: 2rem; color: var(--somar-orange)">L. 0</div>
         </div>
         <div id="historyList"></div>
     </div>
@@ -561,7 +1021,7 @@
         <div id="chatBody" class="chat-body"></div>
         <div class="chat-footer">
             <input id="chatInput" type="text" placeholder="Escribe..." style="margin:0; border-radius:20px; border:none; background:#333; color:white">
-            <button onclick="enviarMensaje()" style="background:#2979ff; color:white; border:none; border-radius:50%; width:45px; height:45px;">➤</button>
+            <button onclick="enviarMensaje()" style="background: var(--somar-orange); color: var(--somar-black); border:none; border-radius:50%; width:45px; height:45px; font-weight:800;">➤</button>
         </div>
     </div>
 

@@ -10,6 +10,8 @@ let countdownInterval = null;
 let sessionStartTime = null;
 let currentZoneName = "Detectando...";
 let conductorNombre = "Conductor";
+let lastHeading = 0; // Para rotación del marcador
+let customMarkerIcon = null; // Icono personalizado del conductor
 
 // === INICIO APP ===
 window.addEventListener('load', async () => {
@@ -47,16 +49,44 @@ window.addEventListener('load', async () => {
     } catch (e) { console.error(e); }
 });
 
-async function esperarSupabase() { return new Promise(r => { const i = setInterval(() => { if (window.supabaseClient) { clearInterval(i); r(); } }, 100); }); }
+async function esperarSupabase() { 
+    return new Promise(r => { 
+        const i = setInterval(() => { 
+            if (window.supabaseClient) { 
+                clearInterval(i); 
+                r(); 
+            } 
+        }, 100); 
+    }); 
+}
 
 function initMap() { 
-    map = L.map('map', { zoomControl: false }).setView([15.5, -88], 16); 
+    map = L.map('map', { 
+        zoomControl: false,
+        rotate: true, // Habilitar rotación
+        bearing: 0 // Orientación inicial
+    }).setView([15.5, -88], 16); 
+    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); 
+    
+    // Crear icono personalizado tipo Waze/Google Maps
+    customMarkerIcon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div class="custom-marker"><div class="custom-marker-icon">🏍️</div></div>',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+    });
+    
     setTimeout(() => map.invalidateSize(), 500); 
 }
 
 function initRealtime() {
-    window.supabaseClient.channel('mi_saldo').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conductores', filter: `id=eq.${conductorId}` }, p => { 
+    window.supabaseClient.channel('mi_saldo').on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'conductores', 
+        filter: `id=eq.${conductorId}` 
+    }, p => { 
         miSaldo = p.new.saldo_actual;
         actualizarSaldoUI();
         if(isOnline && miSaldo < 20) {
@@ -65,7 +95,12 @@ function initRealtime() {
         }
     }).subscribe();
     
-    window.supabaseClient.channel('carreras_pendientes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'carreras', filter: 'estado=eq.buscando' }, p => { 
+    window.supabaseClient.channel('carreras_pendientes').on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'carreras', 
+        filter: 'estado=eq.buscando' 
+    }, p => { 
         if (isOnline && !currentTrip) { 
             sonarAlerta(); 
             mostrarOferta(p.new); 
@@ -102,7 +137,7 @@ function actualizarSaldoUI() {
     document.getElementById('menuBalance').textContent = `L ${miSaldo.toFixed(2)}`;
 }
 
-// === SUBIR FOTO DE PERFIL ===
+// === SUBIR FOTO DE PERFIL CON REDIMENSIÓN ===
 async function subirFotoPerfil(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -112,12 +147,10 @@ async function subirFotoPerfil(event) {
         return alert("Por favor selecciona una imagen válida");
     }
     
-    // Validar tamaño (máximo 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-        return alert("La imagen no debe superar 2MB");
-    }
-    
     try {
+        // Redimensionar imagen antes de subir
+        const resizedImage = await redimensionarImagen(file, 400, 400);
+        
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         
         // Eliminar foto anterior si existe
@@ -132,11 +165,14 @@ async function subirFotoPerfil(event) {
             await window.supabaseClient.storage.from('perfiles').remove([oldFileName]);
         }
         
-        // Subir nueva foto
-        const fileName = `${session.user.id}_${Date.now()}.${file.name.split('.').pop()}`;
+        // Subir nueva foto redimensionada
+        const fileName = `${session.user.id}_${Date.now()}.jpg`;
         const { error: uploadError } = await window.supabaseClient.storage
             .from('perfiles')
-            .upload(fileName, file);
+            .upload(fileName, resizedImage, {
+                contentType: 'image/jpeg',
+                upsert: true
+            });
         
         if (uploadError) throw uploadError;
         
@@ -164,6 +200,55 @@ async function subirFotoPerfil(event) {
     }
 }
 
+// === FUNCIÓN PARA REDIMENSIONAR IMÁGENES ===
+function redimensionarImagen(file, maxWidth, maxHeight) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            const img = new Image();
+            
+            img.onload = () => {
+                // Crear canvas
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Calcular nuevas dimensiones manteniendo aspecto
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = height * (maxWidth / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = width * (maxHeight / height);
+                        height = maxHeight;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Dibujar imagen redimensionada
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convertir a blob
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.85); // Calidad 85%
+            };
+            
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 function cargarFotoPerfil(url) {
     const img = document.getElementById('profilePhoto');
     const placeholder = document.getElementById('photoPlaceholder');
@@ -173,6 +258,11 @@ function cargarFotoPerfil(url) {
     placeholder.style.display = 'none';
 }
 
+// === TOGGLE PANEL DE VIAJE (EXPANDIR/COLAPSAR) ===
+function toggleTripPanel() {
+    const panel = document.getElementById('activeTripPanel');
+    panel.classList.toggle('collapsed');
+}
 // === OFERTA CON MAPA Y CUENTA REGRESIVA ===
 function mostrarOferta(viaje) {
     currentTrip = viaje;
@@ -243,6 +333,7 @@ function iniciarCuentaRegresiva() {
     
     timerText.textContent = segundosRestantes;
     timerFill.style.width = '100%';
+    timerFill.style.background = '#FF6B35';
     
     countdownInterval = setInterval(() => {
         segundosRestantes--;
@@ -264,6 +355,7 @@ function iniciarCuentaRegresiva() {
         }
     }, 1000);
 }
+
 // === RECHAZAR VIAJE (MANUAL O AUTOMÁTICO) ===
 function rechazarViajeAutomatico() {
     if (!currentTrip || !currentTrip.id) {
@@ -321,7 +413,7 @@ function cerrarModalOferta() {
     console.log("✅ Modal de oferta cerrado correctamente");
 }
 
-// === ESTADO Y GPS ===
+// === ESTADO Y GPS CON ROTACIÓN DEL MAPA ===
 async function toggleStatus() {
     const btn = document.getElementById('btnStatus');
     if (!isOnline) {
@@ -349,16 +441,43 @@ function iniciarGPS() {
     
     if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(async (pos) => {
-            const { latitude, longitude } = pos.coords;
+            const { latitude, longitude, heading } = pos.coords;
             myPosition = { lat: latitude, lng: longitude };
             
+            // Calcular dirección de movimiento si no hay heading del GPS
+            let currentHeading = heading;
+            
             if (!marker) {
-                marker = L.marker([latitude, longitude]).addTo(map);
+                marker = L.marker([latitude, longitude], { 
+                    icon: customMarkerIcon,
+                    rotationAngle: 0
+                }).addTo(map);
             } else {
+                const oldLatLng = marker.getLatLng();
                 marker.setLatLng([latitude, longitude]);
+                
+                // Calcular dirección basada en movimiento si no hay heading
+                if (currentHeading === null || currentHeading === undefined) {
+                    currentHeading = calcularDireccion(
+                        oldLatLng.lat, 
+                        oldLatLng.lng, 
+                        latitude, 
+                        longitude
+                    );
+                }
             }
             
-            map.setView([latitude, longitude], 16);
+            // Actualizar rotación del marcador
+            if (currentHeading !== null && currentHeading !== undefined) {
+                lastHeading = currentHeading;
+                actualizarRotacionMarcador(currentHeading);
+            }
+            
+            // Centrar mapa en posición con rotación (estilo Waze)
+            map.setView([latitude, longitude], map.getZoom(), {
+                animate: true,
+                duration: 0.5
+            });
             
             await detectarZonaActual(latitude, longitude);
             
@@ -374,9 +493,44 @@ function iniciarGPS() {
                 })
                 .eq('id', conductorId);
             
-        }, null, { enableHighAccuracy: true });
+        }, null, { 
+            enableHighAccuracy: true,
+            maximumAge: 1000,
+            timeout: 5000
+        });
         
         setInterval(calcularResumenDiario, 30000);
+    }
+}
+
+// === CALCULAR DIRECCIÓN ENTRE DOS PUNTOS ===
+function calcularDireccion(lat1, lon1, lat2, lon2) {
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const lat1Rad = lat1 * Math.PI / 180;
+    const lat2Rad = lat2 * Math.PI / 180;
+    
+    const y = Math.sin(dLon) * Math.cos(lat2Rad);
+    const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
+              Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+    
+    let bearing = Math.atan2(y, x) * 180 / Math.PI;
+    bearing = (bearing + 360) % 360;
+    
+    return bearing;
+}
+
+// === ACTUALIZAR ROTACIÓN DEL MARCADOR ===
+function actualizarRotacionMarcador(heading) {
+    if (!marker) return;
+    
+    const markerElement = marker.getElement();
+    if (markerElement) {
+        const markerIcon = markerElement.querySelector('.custom-marker');
+        if (markerIcon) {
+            // Compensar la rotación inicial del CSS (-45deg) y aplicar heading
+            const rotation = heading - 45;
+            markerIcon.style.transform = `rotate(${rotation}deg)`;
+        }
     }
 }
 
@@ -384,7 +538,6 @@ function detenerGPS() {
     if (watchId) navigator.geolocation.clearWatch(watchId); 
     sessionStartTime = null;
 }
-
 // === ACEPTAR VIAJE ===
 async function aceptarViaje() {
     if (countdownInterval) {
@@ -506,7 +659,7 @@ function trazarRuta(lat1, lng1, lat2, lng2) {
     routingControl = L.Routing.control({ 
         waypoints: [L.latLng(lat1, lng1), L.latLng(lat2, lng2)], 
         createMarker: function() { return null; }, 
-        lineOptions: { styles: [{color: '#2979ff', opacity: 0.7, weight: 6}] }, 
+        lineOptions: { styles: [{color: '#FF6B35', opacity: 0.8, weight: 6}] }, 
         addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false 
     }).addTo(map);
 
@@ -515,14 +668,20 @@ function trazarRuta(lat1, lng1, lat2, lng2) {
         const km = (summary.totalDistance / 1000).toFixed(1);
         const min = Math.round(summary.totalTime / 60);
         document.getElementById('tripStats').textContent = `${km} km • ${min} min`;
+        
+        // Actualizar info colapsada
+        document.getElementById('tripEtaCollapsed').textContent = `${min} min`;
     });
 }
 
 function configurarPanelViaje() {
     const p = document.getElementById('activeTripPanel'); 
     document.getElementById('connectionPanel').style.display = 'none'; 
-    p.style.display = 'block';
+    p.style.display = 'flex';
+    p.classList.remove('collapsed'); // Expandir al inicio
+    
     document.getElementById('tripPrice').textContent = `L. ${currentTrip.precio}`;
+    document.getElementById('tripPriceCollapsed').textContent = `L. ${currentTrip.precio}`;
     
     actualizarDesgloseFinanciero(currentTrip.precio);
     
@@ -531,6 +690,7 @@ function configurarPanelViaje() {
     document.getElementById('tripStats').textContent = "Calculando...";
     
     const t = document.getElementById('tripStepTitle'); 
+    const tCollapsed = document.getElementById('tripStepCollapsed');
     const b = document.getElementById('btnTripAction'); 
     b.disabled = false;
     
@@ -544,12 +704,14 @@ function configurarPanelViaje() {
 
     navigator.geolocation.getCurrentPosition(pos => {
         if(currentTrip.estado === 'aceptada') { 
-            t.textContent = "1. Recoger"; 
+            t.textContent = "1. Recoger Cliente"; 
+            tCollapsed.textContent = "Recogiendo";
             b.textContent = "YA LLEGUÉ"; 
             b.className = "btn-action btn-primary"; 
             trazarRuta(pos.coords.latitude, pos.coords.longitude, currentTrip.origen_lat, currentTrip.origen_lng); 
         } else { 
-            t.textContent = "2. Llevar"; 
+            t.textContent = "2. Llevar a Destino"; 
+            tCollapsed.textContent = "En curso";
             b.textContent = "FINALIZAR"; 
             b.className = "btn-action btn-finish"; 
             trazarRuta(currentTrip.origen_lat, currentTrip.origen_lng, currentTrip.destino_lat, currentTrip.destino_lng); 
@@ -565,7 +727,7 @@ function abrirWaze() {
 }
 
 async function cancelarViaje() { 
-    if(!confirm("¿Cancelar?")) return; 
+    if(!confirm("¿Cancelar viaje?")) return; 
     if(routingControl) { 
         try{ map.removeControl(routingControl); }catch(e){} 
         routingControl = null; 
@@ -616,6 +778,7 @@ function sonarAlerta() {
         setTimeout(() => modalTrip.classList.remove('vibrating'), 1000);
     }
 }
+
 function abrirModalRecarga() { 
     document.getElementById('modalRecarga').style.display='flex'; 
     document.getElementById('recMonto').value=''; 
@@ -663,7 +826,6 @@ async function enviarRecarga() {
         btn.innerText="REINTENTAR"; 
     }
 }
-
 function initChat(carreraId) { 
     const chatBody = document.getElementById('chatBody'); 
     chatBody.innerHTML = '<div style="text-align:center; color:#888; margin-top:10px"><small>Chat con Cliente</small></div>'; 
@@ -761,7 +923,7 @@ async function detectarZonaActual(lat, lng) {
         if (zona && zona.nombre) {
             currentZoneName = zona.nombre;
             document.getElementById('zoneName').textContent = zona.nombre;
-            document.getElementById('zoneName').style.color = '#2979ff';
+            document.getElementById('zoneName').style.color = '#FF6B35';
         } else {
             currentZoneName = "Fuera de zona";
             document.getElementById('zoneName').textContent = "Fuera de cobertura";
@@ -885,40 +1047,3 @@ async function cerrarSesion() {
         window.location.href='login.html'; 
     } 
 }
-async function calcularResumenDiario() {
-    if(!window.supabaseClient || !conductorId) return;
-    
-    const hoy = new Date().toISOString().split('T')[0];
-    const { data } = await window.supabaseClient
-        .from('carreras')
-        .select('precio')
-        .eq('conductor_id', conductorId)
-        .eq('estado', 'completada')
-        .gte('fecha_solicitud', hoy + 'T00:00:00')
-        .lte('fecha_solicitud', hoy + 'T23:59:59');
-    
-    let totalHoy = 0;
-    let viajesHoy = 0;
-    
-    if(data) {
-        viajesHoy = data.length;
-        data.forEach(c => totalHoy += parseFloat(c.precio));
-    }
-    
-    const promedio = viajesHoy > 0 ? (totalHoy / viajesHoy) : 0;
-    
-    let horasActivas = 0;
-    if (sessionStartTime && isOnline) {
-        const ahora = new Date();
-        const diff = (ahora - sessionStartTime) / 1000 / 60 / 60;
-        horasActivas = diff.toFixed(1);
-    }
-    
-    // Actualizar en el menú lateral
-    document.getElementById('menuTodayTrips').innerText = viajesHoy;
-    document.getElementById('menuTodayEarnings').innerText = `L ${totalHoy.toFixed(0)}`;
-    document.getElementById('menuTodayHours').innerText = `${horasActivas}h`;
-    document.getElementById('menuTodayAverage').innerText = `L ${promedio.toFixed(0)}`;
-}
-
-console.log("✨ App Somar Conductor cargada correctamente");

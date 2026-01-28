@@ -700,24 +700,11 @@ function configurarPanelViaje() {
     const b = document.getElementById('btnTripAction'); 
     b.disabled = false;
     
-    window.supabaseClient.from('clientes').select('perfiles(nombre, telefono, foto_perfil)').eq('id', currentTrip.cliente_id).single()
+    window.supabaseClient.from('clientes').select('perfiles(nombre, telefono)').eq('id', currentTrip.cliente_id).single()
         .then(({data}) => { 
             if(data) { 
                 document.getElementById('lblClientName').textContent = data.perfiles?.nombre || "Cliente"; 
-                clientPhone = data.perfiles?.telefono;
-                
-                // Cargar foto del cliente
-                const fotoPerfil = data.perfiles?.foto_perfil;
-                const fotoClienteElement = document.getElementById('fotoCliente');
-                if (fotoPerfil && fotoClienteElement) {
-                    fotoClienteElement.src = fotoPerfil;
-                    fotoClienteElement.style.display = 'block';
-                    const placeholder = document.getElementById('fotoClientePlaceholder');
-                    if (placeholder) placeholder.style.display = 'none';
-                }
-                
-                // Calcular calificación promedio del cliente
-                calcularCalificacionCliente(currentTrip.cliente_id);
+                clientPhone = data.perfiles?.telefono; 
             } 
         });
 
@@ -1133,71 +1120,4 @@ async function cerrarSesion() {
         await window.supabaseClient.auth.signOut(); 
         window.location.href='login.html'; 
     } 
-    // === CALCULAR CAMBIO ===
-function calcularCambio() {
-    const inputPago = document.getElementById('clientePago');
-    const cambioSpan = document.getElementById('cambioDevolver');
-    const tripPriceElement = document.getElementById('tripFullPrice');
-    
-    if (!inputPago || !cambioSpan || !tripPriceElement) return;
-    
-    const pagoCliente = parseFloat(inputPago.value) || 0;
-    const precioTexto = tripPriceElement.textContent.replace('L.', '').replace('L', '').trim();
-    const precioViaje = parseFloat(precioTexto) || 0;
-    
-    if (pagoCliente === 0) {
-        cambioSpan.textContent = 'L 0.00';
-        cambioSpan.style.color = 'var(--somar-orange)';
-        return;
-    }
-    
-    const cambio = pagoCliente - precioViaje;
-    
-    if (cambio >= 0) {
-        cambioSpan.textContent = `L ${cambio.toFixed(2)}`;
-        cambioSpan.style.color = 'var(--somar-orange)';
-    } else {
-        cambioSpan.textContent = `Falta: L ${Math.abs(cambio).toFixed(2)}`;
-        cambioSpan.style.color = '#ef4444';
-    }
-}
-
-// === CALCULAR CALIFICACIÓN PROMEDIO DEL CLIENTE ===
-async function calcularCalificacionCliente(clienteId) {
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('carreras')
-            .select('calificacion_conductor')
-            .eq('cliente_id', clienteId)
-            .eq('estado', 'completada')
-            .not('calificacion_conductor', 'is', null);
-        
-        if (error) throw error;
-        
-        const calificacionElement = document.getElementById('calificacionCliente');
-        if (!calificacionElement) return;
-        
-        if (!data || data.length === 0) {
-            calificacionElement.textContent = 'Nuevo';
-            return;
-        }
-        
-        // Calcular promedio
-        let suma = 0;
-        data.forEach(c => {
-            suma += parseFloat(c.calificacion_conductor);
-        });
-        const promedio = suma / data.length;
-        
-        calificacionElement.textContent = `${promedio.toFixed(1)} (${data.length} viajes)`;
-        
-    } catch (e) {
-        console.error("Error calculando calificación:", e);
-        const calificacionElement = document.getElementById('calificacionCliente');
-        if (calificacionElement) {
-            calificacionElement.textContent = '--';
-        }
-    }
-}
-
 }

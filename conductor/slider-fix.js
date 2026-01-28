@@ -22,14 +22,18 @@
         if (btnAccept) {
             setupSlider(btnAccept, sliderAccept, 'left', function() {
                 console.log("✅ Viaje aceptado vía slider");
-                aceptarViaje();
+                if (typeof aceptarViaje === 'function') {
+                    aceptarViaje();
+                }
             });
         }
 
         if (btnReject) {
             setupSlider(btnReject, sliderReject, 'right', function() {
                 console.log("❌ Viaje rechazado vía slider");
-                rechazarViaje();
+                if (typeof rechazarViaje === 'function') {
+                    rechazarViaje();
+                }
             });
         }
     }

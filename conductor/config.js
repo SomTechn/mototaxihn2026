@@ -1,4 +1,3 @@
-// REEMPLAZA CON TUS CLAVES REALES DE SUPABASE
 const SUPABASE_URL = 'https://brtiamwcdlwfyyprlevw.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_g8ETwpbbpEFR64zacmx_cw_L3Yxg7Zt';
 

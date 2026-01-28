@@ -24,7 +24,7 @@
         /* MAPA */
         #map { flex: 1; width: 100%; z-index: 0; }
         
-        /* ✨ MEJORA 1: RESUMEN DIARIO MEJORADO */
+        /* RESUMEN DIARIO MEJORADO */
         #dailySummary {
             position: absolute; top: 70px; left: 10px; 
             background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 0, 0, 0.9));
@@ -50,7 +50,7 @@
             color: #94a3b8; font-size: 0.75rem; 
         }
 
-        /* ✨ MEJORA 6: INDICADOR DE ZONA ACTUAL */
+        /* INDICADOR DE ZONA ACTUAL */
         #currentZone {
             position: absolute; top: 70px; right: 10px; 
             background: rgba(0, 0, 0, 0.85);
@@ -75,7 +75,7 @@
         #activeTripPanel { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); max-height: 60vh; overflow-y: auto; }
         .trip-info-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
         
-        /* ✨ MEJORA 4: DESGLOSE FINANCIERO */
+        /* DESGLOSE FINANCIERO */
         .trip-financial-breakdown {
             background: #2a2a2a; padding: 15px; border-radius: 10px; 
             margin-bottom: 15px; border: 1px solid #333;
@@ -100,7 +100,7 @@
         .btn-primary { background: #2979ff; color: white; } .btn-finish { background: #00e676; color: black; }
         .btn-nav { background: #333; color: white; border: 1px solid #555; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-right: 5px; }
         
-        /* ✨ MEJORA 3: MENSAJES PREDEFINIDOS */
+        /* MENSAJES PREDEFINIDOS */
         .quick-messages {
             background: #2a2a2a; padding: 12px; border-radius: 10px;
             margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 8px;
@@ -123,7 +123,7 @@
         .modal-fs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 3000; padding: 20px; overflow-y: auto; display: none; flex-direction: column; }
         .modal-header { display: flex; align-items: center; margin-bottom: 20px; } .back-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; margin-right: 10px; }
         
-        /* ✨ MEJORA 2: HISTORIAL DE VIAJES MEJORADO */
+        /* HISTORIAL DE VIAJES MEJORADO */
         .history-card { 
             background: #1a1a1a; padding: 15px; border-radius: 12px; 
             margin-bottom: 10px; border: 1px solid #333;
@@ -167,7 +167,7 @@
         .btn-save { width: 100%; padding: 15px; background: #00e676; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
         .btn-logout { width: 100%; padding: 15px; background: #b91c1c; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 30px; }
 
-        /* === ESTILOS PARA OFERTA DESLIZABLE === */
+        /* ESTILOS PARA OFERTA DESLIZABLE */
         #modalTrip { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
         #previewMap { width: 100%; max-width: 350px; height: 220px; border-radius: 15px; margin: 15px 0; border: 2px solid #333; }
         
@@ -213,7 +213,7 @@
 
         .leaflet-routing-container { display: none !important; }
         
-        /* ✨ MEJORA 5: VIBRACIÓN VISUAL */
+        /* VIBRACIÓN VISUAL */
         @keyframes vibrate {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -233,7 +233,7 @@
         <button class="btn-small" onclick="abrirModalRecarga()">+ Saldo</button>
     </div>
 
-    <!-- ✨ MEJORA 1: RESUMEN DIARIO MEJORADO -->
+    <!-- RESUMEN DIARIO MEJORADO -->
     <div id="dailySummary">
         <div class="summary-title">📊 RESUMEN HOY</div>
         <div class="stat-row">
@@ -247,7 +247,7 @@
         </div>
     </div>
 
-    <!-- ✨ MEJORA 6: INDICADOR DE ZONA ACTUAL -->
+    <!-- INDICADOR DE ZONA ACTUAL -->
     <div id="currentZone">
         <span class="zone-icon">📍</span>
         <span class="zone-name" id="zoneName">Detectando...</span>
@@ -259,7 +259,6 @@
     <div id="connectionPanel" class="bottom-bar">
         <button id="btnStatus" class="btn-status offline" onclick="toggleStatus()">DESCONECTADO 🔴</button>
     </div>
-
     <div id="activeTripPanel">
         <div class="trip-info-header">
             <div>
@@ -275,7 +274,7 @@
             </div>
         </div>
         
-        <!-- ✨ MEJORA 4: DESGLOSE FINANCIERO -->
+        <!-- DESGLOSE FINANCIERO -->
         <div class="trip-financial-breakdown">
             <div class="financial-row">
                 <span class="financial-label">💵 Tarifa del viaje</span>
@@ -291,7 +290,7 @@
             </div>
         </div>
 
-        <!-- ✨ MEJORA 3: MENSAJES PREDEFINIDOS -->
+        <!-- MENSAJES PREDEFINIDOS -->
         <div class="quick-messages">
             <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya voy en camino 🚗')">Ya voy 🚗</button>
             <button class="quick-msg-btn" onclick="enviarMensajeRapido('Llego en 5 minutos ⏱️')">5 min ⏱️</button>
@@ -344,7 +343,7 @@
         </div>
     </div>
 
-    <!-- ✨ MEJORA 2: HISTORIAL CON DESGLOSE -->
+    <!-- HISTORIAL CON DESGLOSE -->
     <div id="historyPanel" class="modal-fs">
         <div class="modal-header">
             <button class="back-btn" onclick="document.getElementById('historyPanel').style.display='none'">⬅️</button>
@@ -357,12 +356,30 @@
         <div id="historyList"></div>
     </div>
     
-    <div id="profilePanel" class="modal-fs"><div class="modal-header"><button class="back-btn" onclick="document.getElementById('profilePanel').style.display='none'">⬅️</button><h2 style="margin:0; color:white">Perfil</h2></div><label>Nombre</label><input id="pName"><label>Teléfono</label><input id="pPhone"><label>Moto</label><input id="pMoto"><label>Placa</label><input id="pPlate"><label>Email</label><input id="pEmail" readonly style="background:#333; color:#888"><button class="btn-save" onclick="guardarPerfil()">GUARDAR</button><button class="btn-logout" onclick="cerrarSesion()">SALIR</button></div>
+    <div id="profilePanel" class="modal-fs">
+        <div class="modal-header">
+            <button class="back-btn" onclick="document.getElementById('profilePanel').style.display='none'">⬅️</button>
+            <h2 style="margin:0; color:white">Perfil</h2>
+        </div>
+        <label>Nombre</label><input id="pName">
+        <label>Teléfono</label><input id="pPhone">
+        <label>Moto</label><input id="pMoto">
+        <label>Placa</label><input id="pPlate">
+        <label>Email</label><input id="pEmail" readonly style="background:#333; color:#888">
+        <button class="btn-save" onclick="guardarPerfil()">GUARDAR</button>
+        <button class="btn-logout" onclick="cerrarSesion()">SALIR</button>
+    </div>
     
     <div id="chatModal" class="chat-modal">
-        <div class="chat-header"><span>💬 Chat</span><button onclick="cerrarChat()" style="background:none; border:none; color:white; font-size:1.5rem">✕</button></div>
+        <div class="chat-header">
+            <span>💬 Chat</span>
+            <button onclick="cerrarChat()" style="background:none; border:none; color:white; font-size:1.5rem">✕</button>
+        </div>
         <div id="chatBody" class="chat-body"></div>
-        <div class="chat-footer"><input id="chatInput" type="text" placeholder="Escribe..." style="margin:0; border-radius:20px; border:none; background:#333; color:white"><button onclick="enviarMensaje()" style="background:#2979ff; color:white; border:none; border-radius:50%; width:45px; height:45px;">➤</button></div>
+        <div class="chat-footer">
+            <input id="chatInput" type="text" placeholder="Escribe..." style="margin:0; border-radius:20px; border:none; background:#333; color:white">
+            <button onclick="enviarMensaje()" style="background:#2979ff; color:white; border:none; border-radius:50%; width:45px; height:45px;">➤</button>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

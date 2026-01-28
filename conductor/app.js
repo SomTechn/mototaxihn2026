@@ -9,6 +9,7 @@ let miSaldo = 0;
 let countdownInterval = null;
 let sessionStartTime = null;
 let currentZoneName = "Detectando...";
+let conductorNombre = "Conductor";
 
 // === INICIO APP ===
 window.addEventListener('load', async () => {
@@ -24,7 +25,20 @@ window.addEventListener('load', async () => {
         }
         conductorId = con.id;
         miSaldo = con.saldo_actual || 0; 
-        document.getElementById('balanceDisplay').textContent = `L ${miSaldo.toFixed(2)}`;
+        
+        // Cargar nombre del conductor
+        const { data: perfil } = await window.supabaseClient.from('perfiles').select('nombre, foto_perfil').eq('id', session.user.id).single();
+        if (perfil) {
+            conductorNombre = perfil.nombre || "Conductor";
+            document.getElementById('menuConductorName').textContent = conductorNombre;
+            
+            // Cargar foto de perfil si existe
+            if (perfil.foto_perfil) {
+                cargarFotoPerfil(perfil.foto_perfil);
+            }
+        }
+        
+        actualizarSaldoUI();
         
         initMap(); 
         initRealtime();
@@ -44,7 +58,7 @@ function initMap() {
 function initRealtime() {
     window.supabaseClient.channel('mi_saldo').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conductores', filter: `id=eq.${conductorId}` }, p => { 
         miSaldo = p.new.saldo_actual;
-        document.getElementById('balanceDisplay').textContent = `L ${miSaldo.toFixed(2)}`;
+        actualizarSaldoUI();
         if(isOnline && miSaldo < 20) {
             alert("⚠️ ALERTA: Saldo bajo. Recarga para seguir recibiendo viajes.");
             toggleStatus(); 
@@ -57,6 +71,106 @@ function initRealtime() {
             mostrarOferta(p.new); 
         } 
     }).subscribe();
+}
+
+// === FUNCIONES DEL MENÚ LATERAL ===
+function abrirMenu() {
+    document.getElementById('sideMenu').classList.add('open');
+    document.getElementById('menuOverlay').classList.add('show');
+    actualizarMenuInfo();
+}
+
+function cerrarMenu() {
+    document.getElementById('sideMenu').classList.remove('open');
+    document.getElementById('menuOverlay').classList.remove('show');
+}
+
+function actualizarMenuInfo() {
+    // Actualizar saldo
+    document.getElementById('menuBalance').textContent = `L ${miSaldo.toFixed(2)}`;
+    
+    // Actualizar estado
+    const statusText = isOnline ? "🟢 En Línea" : "🔴 Desconectado";
+    document.getElementById('menuConductorStatus').textContent = statusText;
+    
+    // Actualizar resumen del día
+    calcularResumenDiario();
+}
+
+function actualizarSaldoUI() {
+    // Actualizar en el menú
+    document.getElementById('menuBalance').textContent = `L ${miSaldo.toFixed(2)}`;
+}
+
+// === SUBIR FOTO DE PERFIL ===
+async function subirFotoPerfil(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Validar que sea imagen
+    if (!file.type.startsWith('image/')) {
+        return alert("Por favor selecciona una imagen válida");
+    }
+    
+    // Validar tamaño (máximo 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        return alert("La imagen no debe superar 2MB");
+    }
+    
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        
+        // Eliminar foto anterior si existe
+        const { data: perfilActual } = await window.supabaseClient
+            .from('perfiles')
+            .select('foto_perfil')
+            .eq('id', session.user.id)
+            .single();
+        
+        if (perfilActual?.foto_perfil) {
+            const oldFileName = perfilActual.foto_perfil.split('/').pop();
+            await window.supabaseClient.storage.from('perfiles').remove([oldFileName]);
+        }
+        
+        // Subir nueva foto
+        const fileName = `${session.user.id}_${Date.now()}.${file.name.split('.').pop()}`;
+        const { error: uploadError } = await window.supabaseClient.storage
+            .from('perfiles')
+            .upload(fileName, file);
+        
+        if (uploadError) throw uploadError;
+        
+        // Obtener URL pública
+        const { data: { publicUrl } } = window.supabaseClient.storage
+            .from('perfiles')
+            .getPublicUrl(fileName);
+        
+        // Actualizar en la base de datos
+        const { error: updateError } = await window.supabaseClient
+            .from('perfiles')
+            .update({ foto_perfil: publicUrl })
+            .eq('id', session.user.id);
+        
+        if (updateError) throw updateError;
+        
+        // Mostrar la foto
+        cargarFotoPerfil(publicUrl);
+        
+        alert("✅ Foto de perfil actualizada");
+        
+    } catch (e) {
+        console.error("Error subiendo foto:", e);
+        alert("Error al subir la foto: " + e.message);
+    }
+}
+
+function cargarFotoPerfil(url) {
+    const img = document.getElementById('profilePhoto');
+    const placeholder = document.getElementById('photoPlaceholder');
+    
+    img.src = url;
+    img.style.display = 'block';
+    placeholder.style.display = 'none';
 }
 
 // === OFERTA CON MAPA Y CUENTA REGRESIVA ===
@@ -150,7 +264,6 @@ function iniciarCuentaRegresiva() {
         }
     }, 1000);
 }
-
 // === RECHAZAR VIAJE (MANUAL O AUTOMÁTICO) ===
 function rechazarViajeAutomatico() {
     if (!currentTrip || !currentTrip.id) {
@@ -217,13 +330,15 @@ async function toggleStatus() {
         btn.textContent = "EN LÍNEA 🟢"; 
         btn.className = "btn-status online"; 
         await window.supabaseClient.from('conductores').update({ estado: 'disponible' }).eq('id', conductorId); 
-        iniciarGPS(); 
+        iniciarGPS();
+        document.getElementById('menuConductorStatus').textContent = "🟢 En Línea";
     } else { 
         isOnline = false; 
         btn.textContent = "DESCONECTADO 🔴"; 
         btn.className = "btn-status offline"; 
         detenerGPS(); 
-        await window.supabaseClient.from('conductores').update({ estado: 'inactivo' }).eq('id', conductorId); 
+        await window.supabaseClient.from('conductores').update({ estado: 'inactivo' }).eq('id', conductorId);
+        document.getElementById('menuConductorStatus').textContent = "🔴 Desconectado";
     }
 }
 
@@ -366,11 +481,13 @@ async function avanzarViaje() {
                 await window.supabaseClient.from('conductores').update({ estado: 'inactivo' }).eq('id', conductorId); 
                 detenerGPS();
                 alert("⚠️ Saldo insuficiente.");
+                document.getElementById('menuConductorStatus').textContent = "🔴 Desconectado";
             } else {
                 isOnline = true; 
                 document.getElementById('btnStatus').textContent = "EN LÍNEA 🟢"; 
                 document.getElementById('btnStatus').className = "btn-status online";
                 await window.supabaseClient.from('conductores').update({ estado: 'disponible' }).eq('id', conductorId);
+                document.getElementById('menuConductorStatus').textContent = "🟢 En Línea";
             }
             
             calcularResumenDiario();
@@ -467,7 +584,8 @@ async function checkViajePendiente() {
         iniciarGPS(); 
         initChat(currentTrip.id); 
         document.getElementById('btnStatus').textContent = "EN VIAJE 🟢"; 
-        document.getElementById('btnStatus').className = "btn-status online"; 
+        document.getElementById('btnStatus').className = "btn-status online";
+        document.getElementById('menuConductorStatus').textContent = "🟢 En Viaje";
     } 
 }
 
@@ -498,7 +616,6 @@ function sonarAlerta() {
         setTimeout(() => modalTrip.classList.remove('vibrating'), 1000);
     }
 }
-
 function abrirModalRecarga() { 
     document.getElementById('modalRecarga').style.display='flex'; 
     document.getElementById('recMonto').value=''; 
@@ -753,17 +870,21 @@ async function guardarPerfil() {
     const {data:{session}} = await window.supabaseClient.auth.getSession(); 
     await window.supabaseClient.from('perfiles').update({nombre:n, telefono:ph}).eq('id', session.user.id); 
     await window.supabaseClient.from('conductores').update({modelo_moto:m, placa:pl}).eq('id', conductorId); 
-    alert("✅ Guardado"); 
+    
+    // Actualizar nombre en el menú
+    conductorNombre = n;
+    document.getElementById('menuConductorName').textContent = n;
+    
+    alert("✅ Perfil actualizado"); 
     document.getElementById('profilePanel').style.display='none'; 
 }
 
 async function cerrarSesion() { 
-    if(confirm("¿Salir?")) { 
+    if(confirm("¿Cerrar sesión?")) { 
         await window.supabaseClient.auth.signOut(); 
         window.location.href='login.html'; 
     } 
 }
-
 async function calcularResumenDiario() {
     if(!window.supabaseClient || !conductorId) return;
     
@@ -793,10 +914,11 @@ async function calcularResumenDiario() {
         horasActivas = diff.toFixed(1);
     }
     
-    document.getElementById('todayTrips').innerText = `${viajesHoy} viajes`;
-    document.getElementById('todayEarnings').innerText = `L. ${totalHoy.toFixed(2)}`;
-    document.getElementById('todayHours').innerText = `⏱️ ${horasActivas}h activo`;
-    document.getElementById('todayAverage').innerText = `~L.${promedio.toFixed(0)} /viaje`;
+    // Actualizar en el menú lateral
+    document.getElementById('menuTodayTrips').innerText = viajesHoy;
+    document.getElementById('menuTodayEarnings').innerText = `L ${totalHoy.toFixed(0)}`;
+    document.getElementById('menuTodayHours').innerText = `${horasActivas}h`;
+    document.getElementById('menuTodayAverage').innerText = `L ${promedio.toFixed(0)}`;
 }
 
-console.log("✨ App del conductor con 6 mejoras cargada correctamente");
+console.log("✨ App Somar Conductor cargada correctamente");

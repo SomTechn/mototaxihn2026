@@ -744,8 +744,15 @@ async function cancelarViaje() {
 }
 
 async function checkViajePendiente() { 
-    const { data } = await window.supabaseClient.from('carreras').select('*').eq('conductor_id', conductorId).in('estado', ['aceptada', 'en_curso']).maybeSingle(); 
+    const { data } = await window.supabaseClient
+        .from('carreras')
+        .select('*')
+        .eq('conductor_id', conductorId)
+        .in('estado', ['aceptada', 'en_curso'])
+        .maybeSingle(); 
+    
     if (data) { 
+        // HAY VIAJE PENDIENTE
         currentTrip = data; 
         isOnline = true; 
         configurarPanelViaje(); 
@@ -753,8 +760,23 @@ async function checkViajePendiente() {
         initChat(currentTrip.id); 
         document.getElementById('btnStatus').textContent = "EN VIAJE 🟢"; 
         document.getElementById('btnStatus').className = "btn-status online";
-        document.getElementById('menuConductorStatus').textContent = "🟢 En Viaje";
-    } 
+        
+        const menuStatus = document.getElementById('menuConductorStatus');
+        if (menuStatus) {
+            menuStatus.textContent = "🟢 En Viaje";
+        }
+    } else {
+        // NO HAY VIAJE - OCULTAR PANEL
+        const panel = document.getElementById('activeTripPanel');
+        if (panel) {
+            panel.style.display = 'none';
+        }
+        
+        const connectionPanel = document.getElementById('connectionPanel');
+        if (connectionPanel) {
+            connectionPanel.style.display = 'block';
+        }
+    }
 }
 
 let clientPhone = ""; 

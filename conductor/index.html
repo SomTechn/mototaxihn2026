@@ -886,99 +886,69 @@
         <button id="btnStatus" class="btn-status offline" onclick="toggleStatus()">DESCONECTADO 🔴</button>
     </div>
 
-    <!-- PANEL DE VIAJE ACTIVO - OPTIMIZADO -->
-    <div id="activeTripPanel" style="display: none;">
+    <!-- PANEL DE VIAJE ACTIVO - ESTILO WAZE -->
+    <div id="activeTripPanel" class="collapsed">
         <!-- HANDLE PARA ARRASTRAR -->
         <div class="trip-drag-handle" onclick="toggleTripPanel()">
             <div class="trip-drag-indicator"></div>
         </div>
         
-        <!-- CONTENIDO OPTIMIZADO -->
+        <!-- RESUMEN VISIBLE CUANDO ESTÁ COLAPSADO -->
+        <div class="trip-summary-collapsed">
+            <div>
+                <div class="trip-price-big" id="tripPriceCollapsed">L. --</div>
+                <div class="trip-eta" id="tripEtaCollapsed">-- min</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="color: var(--somar-orange); font-weight: 600;" id="tripStepCollapsed">Recogiendo</div>
+            </div>
+        </div>
+        
+        <!-- CONTENIDO COMPLETO (VISIBLE AL EXPANDIR) -->
         <div class="trip-content-scrollable">
-            <!-- INFO DEL VIAJE -->
-            <div style="background: var(--somar-dark); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--somar-orange);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div>
-                        <h3 id="tripStepTitle" style="margin:0; color: var(--somar-orange); font-size: 1.1rem;">Recogiendo...</h3>
-                        <span id="tripStats" style="color:#aaa; font-size:0.85rem;">-- km • -- min</span>
-                    </div>
-                    <div id="tripPrice" style="font-size:1.8rem; font-weight:800; color: var(--somar-orange)">L. --</div>
-                </div>
-                
-                <!-- INFO DEL CLIENTE -->
-                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #222; border-radius: 8px; margin-bottom: 12px;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 2px solid var(--somar-orange);">
-                        👤
-                    </div>
-                    <div style="flex: 1;">
-                        <div id="lblClientName" style="color:white; font-weight:700; font-size: 1rem; margin-bottom: 3px;">Cliente</div>
-                        <div style="display: flex; gap: 5px; align-items: center;">
-                            <span style="color: var(--somar-orange);">⭐</span>
-                            <span style="color: var(--somar-orange); font-weight: 600; font-size: 0.9rem;">4.8</span>
-                            <span style="color: #666; font-size: 0.8rem;">(+120 viajes)</span>
-                        </div>
+            <div class="trip-info-header">
+                <div>
+                    <h3 id="tripStepTitle" style="margin:0; color:#fff">Recogiendo...</h3>
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:5px">
+                        <div id="tripPrice" style="font-size:1.4rem; font-weight:bold; color: var(--somar-orange)">L. --</div>
+                        <span id="tripStats" style="color:#aaa; font-size:0.9rem">-- km • -- min</span>
                     </div>
                 </div>
-                
-                <!-- ORIGEN Y DESTINO -->
-                <div style="margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                        <div style="color: #4ade80; font-size: 1rem;">🔵</div>
-                        <div id="txtOrigen" style="color:#ddd; font-size: 0.9rem;">Origen</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="color: #ef4444; font-size: 1rem;">🔴</div>
-                        <div id="txtDestino" style="color:#ddd; font-size: 0.9rem;">Destino</div>
-                    </div>
+                <div style="display:flex; gap:5px">
+                    <button class="btn-contact" onclick="abrirChat()">💬 Chat <span id="badgeChat">!</span></button>
+                    <button class="btn-nav" onclick="abrirWaze()">🗺️</button>
                 </div>
-                
-                <!-- BOTONES DE ACCIÓN -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button id="btnTripAction" class="btn-action btn-primary" onclick="avanzarViaje()" style="margin: 0;">YA LLEGUÉ</button>
-                    <button class="btn-action" style="background:#2a2a2a; color:#ef4444; border:2px solid #ef4444; margin: 0; font-weight: 700;" onclick="cancelarViaje()">Cancelar</button>
+            </div>
+            
+            <div class="trip-financial-breakdown">
+                <div class="financial-row">
+                    <span class="financial-label">💵 Tarifa del viaje</span>
+                    <span class="financial-value" id="tripFullPrice">L. --</span>
+                </div>
+                <div class="financial-row">
+                    <span class="financial-label">⚙️ Comisión (10%)</span>
+                    <span class="financial-value" id="tripCommission">- L. --</span>
+                </div>
+                <div class="financial-total">
+                    <span>Tu Ganancia Neta:</span>
+                    <span id="tripNetEarnings">L. --</span>
                 </div>
             </div>
 
-            <!-- MENSAJES RÁPIDOS -->
-            <div class="quick-messages" style="margin-bottom: 15px;">
+            <div class="quick-messages">
                 <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya voy en camino 🚗')">Ya voy 🚗</button>
                 <button class="quick-msg-btn" onclick="enviarMensajeRapido('Llego en 5 minutos ⏱️')">5 min ⏱️</button>
                 <button class="quick-msg-btn" onclick="enviarMensajeRapido('Ya llegué, estoy esperando 📍')">Llegué 📍</button>
                 <button class="quick-msg-btn" onclick="enviarMensajeRapido('¿Dónde te encuentras? 📱')">¿Dónde? 📱</button>
-                <button class="btn-contact" onclick="abrirChat()" style="width: 100%; justify-content: center; margin-top: 5px;">💬 Abrir Chat <span id="badgeChat">!</span></button>
-                <button class="btn-nav" onclick="abrirWaze()" style="width: 100%; justify-content: center; margin-top: 5px;">🗺️ Abrir en Google Maps</button>
             </div>
             
-            <!-- DESGLOSE FINANCIERO -->
-            <div style="background: var(--somar-dark); padding: 15px; border-radius: 12px; border: 1px solid #333;">
-                <div style="text-align: center; margin-bottom: 12px;">
-                    <div style="color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">💰 Resumen Financiero</div>
-                </div>
-                
-                <div class="financial-row">
-                    <span class="financial-label">Tarifa del viaje</span>
-                    <span class="financial-value" id="tripFullPrice">L. --</span>
-                </div>
-                <div class="financial-row">
-                    <span class="financial-label">Comisión Somar (10%)</span>
-                    <span class="financial-value" id="tripCommission">- L. --</span>
-                </div>
-                <div class="financial-total">
-                    <span>Tu Ganancia:</span>
-                    <span id="tripNetEarnings">L. --</span>
-                </div>
-                
-                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #333;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: #888; font-size: 0.85rem;">Cliente pagará:</span>
-                        <input type="number" id="clientePago" placeholder="L. 0.00" style="width: 100px; padding: 5px 8px; background: #222; border: 1px solid var(--somar-orange); border-radius: 6px; color: white; text-align: right; font-weight: 600; margin: 0;">
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: var(--somar-orange); font-size: 0.9rem; font-weight: 600;">Cambio a devolver:</span>
-                        <span id="cambioDevolver" style="color: var(--somar-orange); font-size: 1.2rem; font-weight: 800;">L. 0.00</span>
-                    </div>
-                </div>
+            <div class="trip-details">
+                <div style="color:#aaa; font-size:0.8rem; margin-bottom:5px">Cliente: <span id="lblClientName" style="color:white; font-weight:bold">--</span></div>
+                <div class="trip-row"><div class="trip-icon">🔵</div><div id="txtOrigen" style="color:#ddd">--</div></div>
+                <div class="trip-row" style="margin-bottom:0"><div class="trip-icon">🔴</div><div id="txtDestino" style="color:#ddd">--</div></div>
             </div>
+            <button id="btnTripAction" class="btn-action btn-primary" onclick="avanzarViaje()">YA LLEGUÉ</button>
+            <button class="btn-action" style="background:transparent; color:#ef4444; border:1px solid #ef4444" onclick="cancelarViaje()">Cancelar</button>
         </div>
     </div>
 

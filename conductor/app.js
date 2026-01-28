@@ -42,7 +42,7 @@ window.addEventListener('load', async () => {
         
         actualizarSaldoUI();
         
-        initMap(); 
+        initMap();
         initRealtime();
         checkViajePendiente();
         calcularResumenDiario();
@@ -122,11 +122,17 @@ function cerrarMenu() {
 
 function actualizarMenuInfo() {
     // Actualizar saldo
-    document.getElementById('menuBalance').textContent = `L ${miSaldo.toFixed(2)}`;
+    const menuBalance = document.getElementById('menuBalance');
+    if (menuBalance) {
+        menuBalance.textContent = `L ${miSaldo.toFixed(2)}`;
+    }
     
     // Actualizar estado
     const statusText = isOnline ? "🟢 En Línea" : "🔴 Desconectado";
-    document.getElementById('menuConductorStatus').textContent = statusText;
+    const menuStatus = document.getElementById('menuConductorStatus');
+    if (menuStatus) {
+        menuStatus.textContent = statusText;
+    }
     
     // Actualizar resumen del día
     calcularResumenDiario();
@@ -1039,6 +1045,52 @@ async function guardarPerfil() {
     
     alert("✅ Perfil actualizado"); 
     document.getElementById('profilePanel').style.display='none'; 
+}
+
+async function calcularResumenDiario() {
+    if(!window.supabaseClient || !conductorId) return;
+    
+    try {
+        const hoy = new Date().toISOString().split('T')[0];
+        const { data } = await window.supabaseClient
+            .from('carreras')
+            .select('precio')
+            .eq('conductor_id', conductorId)
+            .eq('estado', 'completada')
+            .gte('fecha_solicitud', hoy + 'T00:00:00')
+            .lte('fecha_solicitud', hoy + 'T23:59:59');
+        
+        let totalHoy = 0;
+        let viajesHoy = 0;
+        
+        if(data) {
+            viajesHoy = data.length;
+            data.forEach(c => totalHoy += parseFloat(c.precio));
+        }
+        
+        const promedio = viajesHoy > 0 ? (totalHoy / viajesHoy) : 0;
+        
+        let horasActivas = 0;
+        if (sessionStartTime && isOnline) {
+            const ahora = new Date();
+            const diff = (ahora - sessionStartTime) / 1000 / 60 / 60;
+            horasActivas = diff.toFixed(1);
+        }
+        
+        // Actualizar en el menú lateral (solo si los elementos existen)
+        const menuTrips = document.getElementById('menuTodayTrips');
+        const menuEarnings = document.getElementById('menuTodayEarnings');
+        const menuHours = document.getElementById('menuTodayHours');
+        const menuAverage = document.getElementById('menuTodayAverage');
+        
+        if (menuTrips) menuTrips.innerText = viajesHoy;
+        if (menuEarnings) menuEarnings.innerText = `L ${totalHoy.toFixed(0)}`;
+        if (menuHours) menuHours.innerText = `${horasActivas}h`;
+        if (menuAverage) menuAverage.innerText = `L ${promedio.toFixed(0)}`;
+        
+    } catch (e) {
+        console.error("Error calculando resumen:", e);
+    }
 }
 
 async function cerrarSesion() { 

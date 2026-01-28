@@ -1120,4 +1120,34 @@ async function cerrarSesion() {
         await window.supabaseClient.auth.signOut(); 
         window.location.href='login.html'; 
     } 
+    // === CALCULAR CAMBIO ===
+document.addEventListener('DOMContentLoaded', function() {
+    const inputPago = document.getElementById('clientePago');
+    if (inputPago) {
+        inputPago.addEventListener('input', function() {
+            calcularCambio();
+        });
+    }
+});
+
+function calcularCambio() {
+    const inputPago = document.getElementById('clientePago');
+    const cambioSpan = document.getElementById('cambioDevolver');
+    const tripPriceElement = document.getElementById('tripFullPrice');
+    
+    if (!inputPago || !cambioSpan || !tripPriceElement) return;
+    
+    const pagoCliente = parseFloat(inputPago.value) || 0;
+    const precioViaje = parseFloat(tripPriceElement.textContent.replace('L.', '').trim()) || 0;
+    
+    const cambio = pagoCliente - precioViaje;
+    
+    if (cambio >= 0) {
+        cambioSpan.textContent = `L. ${cambio.toFixed(2)}`;
+        cambioSpan.style.color = 'var(--somar-orange)';
+    } else {
+        cambioSpan.textContent = `Falta: L. ${Math.abs(cambio).toFixed(2)}`;
+        cambioSpan.style.color = '#ef4444';
+    }
+}
 }
